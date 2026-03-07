@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Plus, FolderPlus, Pin, PinOff, Archive, Trash2, Clock, FolderOpen, FileText } from 'lucide-react';
+import { Search, Plus, FolderPlus, Pin, PinOff, Archive, Trash2, Clock, FolderOpen, FileText, PanelLeftClose } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -23,6 +23,7 @@ interface SidebarProps {
    onTogglePin: (note: Note) => void;
    onToggleArchive: (note: Note) => void;
    onDeleteNote: (id: string) => void;
+   onCollapse: () => void;
 }
 
 export function Sidebar({
@@ -39,6 +40,7 @@ export function Sidebar({
    onTogglePin,
    onToggleArchive,
    onDeleteNote,
+   onCollapse,
 }: SidebarProps) {
    const [activeTab, setActiveTab] = useState<SidebarTab>('categories');
    const [tabAnimKey, setTabAnimKey] = useState(0);
@@ -52,11 +54,20 @@ export function Sidebar({
    return (
       <aside className="w-80 h-screen flex flex-col border-r border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
          {/* Logo */}
-         <div className="p-4 border-b border-[var(--color-border)]">
-            <h1 className="text-xl font-bold tracking-tight">
-               <span className="text-[var(--color-accent)]">S</span>criba
-            </h1>
-            <p className="text-xs text-[var(--color-text-muted)] mt-0.5">Smart Notes</p>
+         <div className="p-4 border-b border-[var(--color-border)] flex items-center justify-between">
+            <div>
+               <h1 className="text-xl font-bold tracking-tight">
+                  <span className="text-[var(--color-accent)]">S</span>criba
+               </h1>
+               <p className="text-xs text-[var(--color-text-muted)] mt-0.5">Smart Notes</p>
+            </div>
+            <button
+               onClick={onCollapse}
+               className="p-1.5 rounded-md hover:bg-[var(--color-bg-hover)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
+               title="Hide sidebar"
+            >
+               <PanelLeftClose className="h-4 w-4" />
+            </button>
          </div>
 
          {/* Search */}
