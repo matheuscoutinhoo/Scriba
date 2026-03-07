@@ -1,29 +1,41 @@
-import { Search, Plus, FolderPlus } from 'lucide-react';
+import { useState } from 'react';
+import { Search, Plus, FolderPlus, Pin, Archive, Clock } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
 import { CategoryTree } from '@/components/sidebar/CategoryTree';
 import { cn } from '@/lib/utils';
+import type { Note } from '@/lib/types';
 
 interface SidebarProps {
    selectedCategoryId: string | null;
    searchQuery: string;
+   notes: Note[];
+   selectedNoteId: string | null;
    onSelectCategory: (id: string | null) => void;
    onSearch: (query: string) => void;
    onNewNote: () => void;
    onNewCategory: () => void;
+   onSelectNote: (id: string) => void;
+   onMoveNoteToCategory: (noteId: string, categoryId: string | null) => void;
 }
 
 export function Sidebar({
    selectedCategoryId,
    searchQuery,
+   notes,
+   selectedNoteId,
    onSelectCategory,
    onSearch,
    onNewNote,
    onNewCategory,
+   onSelectNote,
+   onMoveNoteToCategory,
 }: SidebarProps) {
+   const [dragOverAllNotes, setDragOverAllNotes] = useState(false);
 
    return (
-      <aside className="w-64 h-screen flex flex-col border-r border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
+      <aside className="w-80 h-screen flex flex-col border-r border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
          {/* Logo */}
          <div className="p-4 border-b border-[var(--color-border)]">
             <h1 className="text-xl font-bold tracking-tight">
@@ -57,18 +69,31 @@ export function Sidebar({
          </div>
 
          {/* Categories */}
-         <div className="flex-1 overflow-y-auto mt-3">
+         <div className="mt-3">
             <div className="px-3 mb-2">
                <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
                   Categories
                </span>
             </div>
 
-            {/* All Notes */}
+            {/* All Notes (drop target) */}
             <button
                onClick={() => onSelectCategory(null)}
+               onDragOver={(e) => {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = 'move';
+                  setDragOverAllNotes(true);
+               }}
+               onDragLeave={() => setDragOverAllNotes(false)}
+               onDrop={(e) => {
+                  e.preventDefault();
+                  setDragOverAllNotes(false);
+                  const noteId = e.dataTransfer.getData('text/x-note-id');
+                  if (noteId) onMoveNoteToCategory(noteId, null);
+               }}
                className={cn(
                   'w-full text-left px-3 py-1.5 text-sm flex items-center gap-2 transition-colors cursor-pointer',
+                  dragOverAllNotes && 'ring-2 ring-[var(--color-accent)] ring-inset bg-[var(--color-accent-soft)]',
                   selectedCategoryId === null
                      ? 'bg-[var(--color-accent-soft)] text-[var(--color-accent)]'
                      : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)]'
@@ -80,8 +105,107 @@ export function Sidebar({
             <CategoryTree
                selectedId={selectedCategoryId}
                onSelect={onSelectCategory}
+               onDropNote={onMoveNoteToCategory}
             />
          </div>
+
+         {/* Notes */}
+         <div className="flex-1 overflow-y-auto mt-2 border-t border-[var(--color-border)]">
+            <div className="px-3 py-2 flex items-center justify-between">
+               <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+                  {searchQuery ? `Search: "${searchQuery}"` : 'Notes'}
+               </span>
+               <span className="text-[10px] text-[var(--color-text-muted)]">
+                  {notes.length}
+               </span>
+            </div>
+
+            {notes.length === 0 ? (
+               <div className="px-3 py-4 text-center">
+                  <p className="text-[var(--color-text-muted)] text-xs">No notes yet</p>
+               </div>
+            ) : (
+               <div className="flex flex-col">
+                  {notes.map((note) => (
+                     <SidebarNoteCard
+                        key={note.id}
+                        note={note}
+                        isSelected={selectedNoteId === note.id}
+                        onClick={() => onSelectNote(note.id)}
+                     />
+                  ))}
+               </div>
+            )}
+         </div>
       </aside>
+   );
+}
+
+interface SidebarNoteCardProps {
+   note: Note;
+   isSelected: boolean;
+   onClick: () => void;
+}
+
+function SidebarNoteCard({ note, isSelected, onClick }: SidebarNoteCardProps) {
+   const formattedDate = new Date(note.updated_at).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: 'short',
+   });
+
+   return (
+      <button
+         onClick={onClick}
+         draggable
+         onDragStart={(e) => {
+            e.dataTransfer.setData('text/x-note-id', note.id);
+            e.dataTransfer.effectAllowed = 'move';
+         }}
+         className={cn(
+            'w-full text-left px-3 py-2 border-b border-[var(--color-border)] transition-colors cursor-pointer',
+            isSelected
+               ? 'bg-[var(--color-accent-soft)] border-l-2 border-l-[var(--color-accent)]'
+               : 'hover:bg-[var(--color-bg-hover)]'
+         )}
+      >
+         <div className="flex items-start justify-between gap-2">
+            <h3 className="text-xs font-medium truncate flex-1">
+               {note.title}
+            </h3>
+            <div className="flex items-center gap-1 flex-shrink-0">
+               {note.is_pinned === 1 && (
+                  <Pin className="h-3 w-3 text-[var(--color-accent)]" />
+               )}
+               {note.is_archived === 1 && (
+                  <Archive className="h-3 w-3 text-[var(--color-text-muted)]" />
+               )}
+            </div>
+         </div>
+
+         {note.excerpt && (
+            <p className="text-[10px] text-[var(--color-text-muted)] mt-0.5 line-clamp-1">
+               {note.excerpt}
+            </p>
+         )}
+
+         <div className="flex items-center justify-between mt-1">
+            <div className="flex gap-1 flex-wrap">
+               {note.tags.slice(0, 2).map((tag) => (
+                  <Badge key={tag.id} className="text-[9px] py-0 px-1">
+                     {tag.name}
+                  </Badge>
+               ))}
+               {note.tags.length > 2 && (
+                  <span className="text-[9px] text-[var(--color-text-muted)]">
+                     +{note.tags.length - 2}
+                  </span>
+               )}
+            </div>
+            <span className="text-[9px] text-[var(--color-text-muted)] flex items-center gap-0.5">
+               <Clock className="h-2.5 w-2.5" />
+               {formattedDate}
+            </span>
+         </div>
+      </button>
    );
 }

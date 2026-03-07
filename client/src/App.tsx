@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Sidebar } from '@/components/layout/Sidebar';
-import { NoteList } from '@/components/notes/NoteList';
 import { NoteEditor } from '@/components/editor/NoteEditor';
 import { CreateCategoryDialog } from '@/components/dialogs/CreateCategoryDialog';
 import { useNotes, useCreateNote, useUpdateNote, useDeleteNote, useSearchNotes } from '@/hooks/useNotes';
@@ -62,11 +61,17 @@ function ScribaApp() {
     createCategory.mutate({ name, color });
   }, [createCategory]);
 
+  const handleMoveNoteToCategory = useCallback((noteId: string, categoryId: string | null) => {
+    updateNote.mutate({ id: noteId, category_id: categoryId });
+  }, [updateNote]);
+
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar
         selectedCategoryId={selectedCategoryId}
         searchQuery={searchQuery}
+        notes={displayedNotes}
+        selectedNoteId={selectedNoteId}
         onSelectCategory={(id) => {
           setSelectedCategoryId(id);
           setSelectedNoteId(null);
@@ -75,24 +80,9 @@ function ScribaApp() {
         onSearch={setSearchQuery}
         onNewNote={handleNewNote}
         onNewCategory={() => setShowCategoryDialog(true)}
+        onSelectNote={setSelectedNoteId}
+        onMoveNoteToCategory={handleMoveNoteToCategory}
       />
-
-      {/* Note List Panel */}
-      <div className="w-72 border-r border-[var(--color-border)] bg-[var(--color-bg-primary)] overflow-y-auto flex-shrink-0">
-        <div className="p-3 border-b border-[var(--color-border)]">
-          <h2 className="text-sm font-semibold text-[var(--color-text-secondary)]">
-            {searchQuery ? `Search: "${searchQuery}"` : 'Notes'}
-          </h2>
-          <span className="text-[10px] text-[var(--color-text-muted)]">
-            {displayedNotes.length} note{displayedNotes.length !== 1 ? 's' : ''}
-          </span>
-        </div>
-        <NoteList
-          notes={displayedNotes}
-          selectedNoteId={selectedNoteId}
-          onSelectNote={setSelectedNoteId}
-        />
-      </div>
 
       {/* Editor */}
       <div className="flex-1 bg-[var(--color-bg-primary)] overflow-hidden">

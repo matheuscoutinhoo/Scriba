@@ -7,9 +7,10 @@ import type { Category } from '@/lib/types';
 interface CategoryTreeProps {
    selectedId: string | null;
    onSelect: (id: string | null) => void;
+   onDropNote: (noteId: string, categoryId: string | null) => void;
 }
 
-export function CategoryTree({ selectedId, onSelect }: CategoryTreeProps) {
+export function CategoryTree({ selectedId, onSelect, onDropNote }: CategoryTreeProps) {
    const { data: categories, isLoading } = useCategories();
 
    if (isLoading) {
@@ -36,6 +37,7 @@ export function CategoryTree({ selectedId, onSelect }: CategoryTreeProps) {
                category={category}
                selectedId={selectedId}
                onSelect={onSelect}
+               onDropNote={onDropNote}
                depth={0}
             />
          ))}
@@ -47,11 +49,13 @@ interface CategoryNodeProps {
    category: Category;
    selectedId: string | null;
    onSelect: (id: string) => void;
+   onDropNote: (noteId: string, categoryId: string) => void;
    depth: number;
 }
 
-function CategoryNode({ category, selectedId, onSelect, depth }: CategoryNodeProps) {
+function CategoryNode({ category, selectedId, onSelect, onDropNote, depth }: CategoryNodeProps) {
    const [expanded, setExpanded] = useState(false);
+   const [isDragOver, setIsDragOver] = useState(false);
    const hasChildren = category.children && category.children.length > 0;
    const isSelected = selectedId === category.id;
 
@@ -59,8 +63,21 @@ function CategoryNode({ category, selectedId, onSelect, depth }: CategoryNodePro
       <div>
          <button
             onClick={() => onSelect(category.id)}
+            onDragOver={(e) => {
+               e.preventDefault();
+               e.dataTransfer.dropEffect = 'move';
+               setIsDragOver(true);
+            }}
+            onDragLeave={() => setIsDragOver(false)}
+            onDrop={(e) => {
+               e.preventDefault();
+               setIsDragOver(false);
+               const noteId = e.dataTransfer.getData('text/x-note-id');
+               if (noteId) onDropNote(noteId, category.id);
+            }}
             className={cn(
                'w-full text-left py-1.5 text-sm flex items-center gap-1.5 transition-colors cursor-pointer',
+               isDragOver && 'ring-2 ring-[var(--color-accent)] ring-inset bg-[var(--color-accent-soft)]',
                isSelected
                   ? 'bg-[var(--color-accent-soft)] text-[var(--color-accent)]'
                   : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)]'
@@ -102,6 +119,7 @@ function CategoryNode({ category, selectedId, onSelect, depth }: CategoryNodePro
                      category={child}
                      selectedId={selectedId}
                      onSelect={onSelect}
+                     onDropNote={onDropNote}
                      depth={depth + 1}
                   />
                ))}
