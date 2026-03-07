@@ -35,6 +35,18 @@ export function Sidebar({
    onMoveNoteToCategory,
 }: SidebarProps) {
    const [activeTab, setActiveTab] = useState<SidebarTab>('categories');
+   const [tabAnimKey, setTabAnimKey] = useState(0);
+
+   const switchTab = (tab: SidebarTab) => {
+      if (tab === activeTab) return;
+      setActiveTab(tab);
+      setTabAnimKey((k) => k + 1);
+   };
+
+   const handleAllNotesClick = () => {
+      onSelectCategory(null);
+      switchTab('notes');
+   };
 
    return (
       <aside className="w-80 h-screen flex flex-col border-r border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
@@ -73,7 +85,7 @@ export function Sidebar({
          {/* Tabs */}
          <div className="flex mt-3 border-b border-[var(--color-border)]">
             <button
-               onClick={() => setActiveTab('categories')}
+               onClick={() => switchTab('categories')}
                className={cn(
                   'flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium transition-colors cursor-pointer',
                   activeTab === 'categories'
@@ -85,7 +97,7 @@ export function Sidebar({
                Categories
             </button>
             <button
-               onClick={() => setActiveTab('notes')}
+               onClick={() => switchTab('notes')}
                className={cn(
                   'flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium transition-colors cursor-pointer',
                   activeTab === 'notes'
@@ -100,6 +112,10 @@ export function Sidebar({
 
          {/* Tab Content */}
          <div className="flex-1 overflow-y-auto">
+            <div
+               key={tabAnimKey}
+               className="animate-[fadeSlideIn_200ms_ease-out]"
+            >
             {activeTab === 'categories' ? (
                <div className="py-2">
                   <CategoryTree
@@ -108,6 +124,7 @@ export function Sidebar({
                      onDropNote={onMoveNoteToCategory}
                      selectedNoteId={selectedNoteId}
                      onSelectNote={onSelectNote}
+                     onAllNotesClick={handleAllNotesClick}
                   />
                </div>
             ) : (
@@ -139,6 +156,7 @@ export function Sidebar({
                   )}
                </div>
             )}
+            </div>
          </div>
       </aside>
    );

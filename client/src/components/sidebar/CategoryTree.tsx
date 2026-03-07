@@ -11,9 +11,10 @@ interface CategoryTreeProps {
    onDropNote: (noteId: string, categoryId: string | null) => void;
    selectedNoteId?: string | null;
    onSelectNote?: (id: string) => void;
+   onAllNotesClick?: () => void;
 }
 
-export function CategoryTree({ selectedId, onSelect, onDropNote, selectedNoteId, onSelectNote }: CategoryTreeProps) {
+export function CategoryTree({ selectedId, onSelect, onDropNote, selectedNoteId, onSelectNote, onAllNotesClick }: CategoryTreeProps) {
    const { data: categories, isLoading } = useCategories();
    const [dragOverAllNotes, setDragOverAllNotes] = useState(false);
 
@@ -29,7 +30,7 @@ export function CategoryTree({ selectedId, onSelect, onDropNote, selectedNoteId,
       <div className="space-y-0.5">
          {/* All Notes */}
          <button
-            onClick={() => onSelect(null)}
+            onClick={() => onAllNotesClick ? onAllNotesClick() : onSelect(null)}
             onDragOver={(e) => {
                e.preventDefault();
                e.dataTransfer.dropEffect = 'move';
