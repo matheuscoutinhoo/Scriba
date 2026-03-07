@@ -20,8 +20,10 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
    const [tagInput, setTagInput] = useState('');
    const [tags, setTags] = useState<string[]>((note.tags ?? []).map(t => t.name));
    const [editingLineIndex, setEditingLineIndex] = useState<number | null>(null);
+   const [selectAll, setSelectAll] = useState(false);
    const [isDirty, setIsDirty] = useState(false);
    const lineInputRef = useRef<HTMLInputElement>(null);
+   const selectAllRef = useRef<HTMLTextAreaElement>(null);
    const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
    const pendingCursorRef = useRef<number | null>(null);
 
@@ -34,6 +36,14 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
       };
    }, []);
 
+   // Focus and select all text when selectAll mode is activated
+   useEffect(() => {
+      if (selectAll && selectAllRef.current) {
+         selectAllRef.current.focus();
+         selectAllRef.current.select();
+      }
+   }, [selectAll]);
+
    // Reset state when note changes
    useEffect(() => {
       setTitle(note.title);
@@ -41,6 +51,7 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
       setTags(note.tags.map(t => t.name));
       setIsDirty(false);
       setEditingLineIndex(null);
+      setSelectAll(false);
    }, [note.id, note.title, note.content, note.tags]);
 
    // Focus line input when editing line changes
@@ -167,6 +178,10 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
          e.preventDefault();
          if (input) pendingCursorRef.current = input.selectionStart ?? 0;
          setEditingLineIndex(index + 1);
+      } else if (e.ctrlKey && e.key === 'a') {
+         e.preventDefault();
+         setEditingLineIndex(null);
+         setSelectAll(true);
       } else if (e.key === 'Tab') {
          e.preventDefault();
          if (input) {
@@ -246,11 +261,36 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
             onMouseDown={(e) => {
                if (e.target === e.currentTarget) {
                   e.preventDefault();
-                  setEditingLineIndex(lines.length - 1);
+                  if (selectAll) {
+                     setSelectAll(false);
+                     setEditingLineIndex(null);
+                  } else {
+                     setEditingLineIndex(lines.length - 1);
+                  }
                }
             }}
          >
-            {content === '' && editingLineIndex === null ? (
+            {selectAll ? (
+               <textarea
+                  ref={selectAllRef}
+                  value={content}
+                  onChange={(e) => {
+                     const newContent = e.target.value;
+                     setContent(newContent);
+                     handleAutoSave(title, newContent, tags);
+                  }}
+                  onBlur={() => setSelectAll(false)}
+                  onKeyDown={(e) => {
+                     if (e.key === 'Escape') {
+                        e.preventDefault();
+                        setSelectAll(false);
+                     }
+                  }}
+                  className="w-full h-full bg-transparent border-none outline-none text-sm font-[family-name:var(--font-mono)] text-[var(--color-text-primary)] leading-relaxed resize-none"
+                  spellCheck={false}
+                  autoComplete="off"
+               />
+            ) : content === '' && editingLineIndex === null ? (
                <div
                   onMouseDown={(e) => {
                      e.preventDefault();

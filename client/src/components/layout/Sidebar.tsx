@@ -60,7 +60,13 @@ export function Sidebar({
                <Input
                   placeholder="Search notes..."
                   value={searchQuery}
-                  onChange={(e) => onSearch(e.target.value)}
+                  onChange={(e) => {
+                     const value = e.target.value;
+                     onSearch(value);
+                     if (value && activeTab !== 'notes') {
+                        switchTab('notes');
+                     }
+                  }}
                   className="pl-8 h-8 text-xs"
                />
             </div>
