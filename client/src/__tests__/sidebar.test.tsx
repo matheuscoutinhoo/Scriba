@@ -4,9 +4,13 @@ import userEvent from '@testing-library/user-event';
 import { Sidebar } from '@/components/layout/Sidebar';
 import type { Note } from '@/lib/types';
 
-// Mock CategoryTree since it uses hooks (useCategories)
+// Mock CategoryTree since it uses hooks (useCategories, useNotes)
 vi.mock('@/components/sidebar/CategoryTree', () => ({
-   CategoryTree: ({ onDropNote }: { onDropNote: (noteId: string, categoryId: string) => void }) => (
+   CategoryTree: ({ onDropNote, selectedNoteId, onSelectNote }: {
+      onDropNote: (noteId: string, categoryId: string) => void;
+      selectedNoteId?: string | null;
+      onSelectNote?: (id: string) => void;
+   }) => (
       <div
          data-testid="category-tree"
          onDrop={() => onDropNote('note-1', 'cat-1')}
@@ -75,74 +79,70 @@ describe('Sidebar', () => {
       expect(onNewNote).toHaveBeenCalledTimes(1);
    });
 
-   it('calls onSelectCategory with null for All Notes', async () => {
-      const onSelectCategory = vi.fn();
-      const user = userEvent.setup();
-      render(<Sidebar {...defaultProps} onSelectCategory={onSelectCategory} />);
-
-      await user.click(screen.getByText('All Notes'));
-      expect(onSelectCategory).toHaveBeenCalledWith(null);
+   it('shows Categories and Notes tabs', () => {
+      render(<Sidebar {...defaultProps} />);
+      expect(screen.getByText('Categories')).toBeInTheDocument();
+      expect(screen.getByText('Notes')).toBeInTheDocument();
    });
 
-   it('highlights All Notes when no category selected', () => {
-      render(<Sidebar {...defaultProps} selectedCategoryId={null} />);
-      const allNotes = screen.getByText('All Notes');
-      expect(allNotes.className).toContain('text-[var(--color-accent)]');
-   });
-
-   it('renders CategoryTree', () => {
+   it('renders CategoryTree in Categories tab by default', () => {
       render(<Sidebar {...defaultProps} />);
       expect(screen.getByTestId('category-tree')).toBeInTheDocument();
    });
 
-   it('renders notes in the sidebar', () => {
+   it('switches to Notes tab and shows notes', async () => {
+      const user = userEvent.setup();
       const notes = [
          makeNote({ id: '1', title: 'First Note' }),
          makeNote({ id: '2', title: 'Second Note' }),
       ];
       render(<Sidebar {...defaultProps} notes={notes} />);
+
+      await user.click(screen.getByText('Notes'));
       expect(screen.getByText('First Note')).toBeInTheDocument();
       expect(screen.getByText('Second Note')).toBeInTheDocument();
    });
 
-   it('shows empty state when no notes', () => {
+   it('shows empty state in Notes tab when no notes', async () => {
+      const user = userEvent.setup();
       render(<Sidebar {...defaultProps} notes={[]} />);
+      await user.click(screen.getByText('Notes'));
       expect(screen.getByText('No notes yet')).toBeInTheDocument();
    });
 
-   it('calls onSelectNote when a note is clicked', async () => {
+   it('calls onSelectNote when a note in Notes tab is clicked', async () => {
       const onSelectNote = vi.fn();
       const user = userEvent.setup();
       const notes = [makeNote({ id: 'note-1', title: 'Click Me' })];
       render(<Sidebar {...defaultProps} notes={notes} onSelectNote={onSelectNote} />);
+
+      await user.click(screen.getByText('Notes'));
       await user.click(screen.getByText('Click Me'));
       expect(onSelectNote).toHaveBeenCalledWith('note-1');
    });
 
-   it('note cards are draggable', () => {
+   it('note cards in Notes tab are draggable', async () => {
+      const user = userEvent.setup();
       const notes = [makeNote({ id: 'note-1', title: 'Draggable' })];
       render(<Sidebar {...defaultProps} notes={notes} />);
+
+      await user.click(screen.getByText('Notes'));
       const noteCard = screen.getByText('Draggable').closest('button');
       expect(noteCard).toHaveAttribute('draggable', 'true');
    });
 
-   it('calls onMoveNoteToCategory when note is dropped on All Notes', () => {
-      const onMoveNoteToCategory = vi.fn();
-      const notes = [makeNote({ id: 'note-1', title: 'Drag Me' })];
-      render(<Sidebar {...defaultProps} notes={notes} onMoveNoteToCategory={onMoveNoteToCategory} />);
-
-      const allNotesBtn = screen.getByText('All Notes');
-      fireEvent.drop(allNotesBtn, {
-         dataTransfer: {
-            getData: (type: string) => type === 'text/x-note-id' ? 'note-1' : '',
-         },
-      });
-      expect(onMoveNoteToCategory).toHaveBeenCalledWith('note-1', null);
-   });
-
-   it('shows note count', () => {
+   it('shows note count in Notes tab', async () => {
+      const user = userEvent.setup();
       const notes = [makeNote(), makeNote({ id: '2' })];
       render(<Sidebar {...defaultProps} notes={notes} />);
+      await user.click(screen.getByText('Notes'));
       expect(screen.getByText('2')).toBeInTheDocument();
+   });
+
+   it('does not show notes in Categories tab', () => {
+      const notes = [makeNote({ id: '1', title: 'Hidden Note' })];
+      render(<Sidebar {...defaultProps} notes={notes} />);
+      // Categories tab is active by default, notes should not show here
+      expect(screen.queryByText('Hidden Note')).not.toBeInTheDocument();
    });
 });

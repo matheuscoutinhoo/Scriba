@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { Search, Plus, FolderPlus, Pin, Archive, Clock } from 'lucide-react';
+import { Search, Plus, FolderPlus, Pin, Archive, Clock, FolderOpen, FileText } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { CategoryTree } from '@/components/sidebar/CategoryTree';
 import { cn } from '@/lib/utils';
 import type { Note } from '@/lib/types';
+
+type SidebarTab = 'categories' | 'notes';
 
 interface SidebarProps {
    selectedCategoryId: string | null;
@@ -32,7 +34,7 @@ export function Sidebar({
    onSelectNote,
    onMoveNoteToCategory,
 }: SidebarProps) {
-   const [dragOverAllNotes, setDragOverAllNotes] = useState(false);
+   const [activeTab, setActiveTab] = useState<SidebarTab>('categories');
 
    return (
       <aside className="w-80 h-screen flex flex-col border-r border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
@@ -68,72 +70,73 @@ export function Sidebar({
             </Button>
          </div>
 
-         {/* Categories */}
-         <div className="mt-3">
-            <div className="px-3 mb-2">
-               <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
-                  Categories
-               </span>
-            </div>
-
-            {/* All Notes (drop target) */}
+         {/* Tabs */}
+         <div className="flex mt-3 border-b border-[var(--color-border)]">
             <button
-               onClick={() => onSelectCategory(null)}
-               onDragOver={(e) => {
-                  e.preventDefault();
-                  e.dataTransfer.dropEffect = 'move';
-                  setDragOverAllNotes(true);
-               }}
-               onDragLeave={() => setDragOverAllNotes(false)}
-               onDrop={(e) => {
-                  e.preventDefault();
-                  setDragOverAllNotes(false);
-                  const noteId = e.dataTransfer.getData('text/x-note-id');
-                  if (noteId) onMoveNoteToCategory(noteId, null);
-               }}
+               onClick={() => setActiveTab('categories')}
                className={cn(
-                  'w-full text-left px-3 py-1.5 text-sm flex items-center gap-2 transition-colors cursor-pointer',
-                  dragOverAllNotes && 'ring-2 ring-[var(--color-accent)] ring-inset bg-[var(--color-accent-soft)]',
-                  selectedCategoryId === null
-                     ? 'bg-[var(--color-accent-soft)] text-[var(--color-accent)]'
-                     : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)]'
+                  'flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium transition-colors cursor-pointer',
+                  activeTab === 'categories'
+                     ? 'text-[var(--color-accent)] border-b-2 border-[var(--color-accent)]'
+                     : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'
                )}
             >
-               All Notes
+               <FolderOpen className="h-3.5 w-3.5" />
+               Categories
             </button>
-
-            <CategoryTree
-               selectedId={selectedCategoryId}
-               onSelect={onSelectCategory}
-               onDropNote={onMoveNoteToCategory}
-            />
+            <button
+               onClick={() => setActiveTab('notes')}
+               className={cn(
+                  'flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium transition-colors cursor-pointer',
+                  activeTab === 'notes'
+                     ? 'text-[var(--color-accent)] border-b-2 border-[var(--color-accent)]'
+                     : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'
+               )}
+            >
+               <FileText className="h-3.5 w-3.5" />
+               Notes
+            </button>
          </div>
 
-         {/* Notes */}
-         <div className="flex-1 overflow-y-auto mt-2 border-t border-[var(--color-border)]">
-            <div className="px-3 py-2 flex items-center justify-between">
-               <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
-                  {searchQuery ? `Search: "${searchQuery}"` : 'Notes'}
-               </span>
-               <span className="text-[10px] text-[var(--color-text-muted)]">
-                  {notes.length}
-               </span>
-            </div>
-
-            {notes.length === 0 ? (
-               <div className="px-3 py-4 text-center">
-                  <p className="text-[var(--color-text-muted)] text-xs">No notes yet</p>
+         {/* Tab Content */}
+         <div className="flex-1 overflow-y-auto">
+            {activeTab === 'categories' ? (
+               <div className="py-2">
+                  <CategoryTree
+                     selectedId={selectedCategoryId}
+                     onSelect={onSelectCategory}
+                     onDropNote={onMoveNoteToCategory}
+                     selectedNoteId={selectedNoteId}
+                     onSelectNote={onSelectNote}
+                  />
                </div>
             ) : (
-               <div className="flex flex-col">
-                  {notes.map((note) => (
-                     <SidebarNoteCard
-                        key={note.id}
-                        note={note}
-                        isSelected={selectedNoteId === note.id}
-                        onClick={() => onSelectNote(note.id)}
-                     />
-                  ))}
+               <div className="py-2">
+                  <div className="px-3 py-1 flex items-center justify-between">
+                     <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+                        {searchQuery ? `Search: "${searchQuery}"` : 'Recent Notes'}
+                     </span>
+                     <span className="text-[10px] text-[var(--color-text-muted)]">
+                        {notes.length}
+                     </span>
+                  </div>
+
+                  {notes.length === 0 ? (
+                     <div className="px-3 py-4 text-center">
+                        <p className="text-[var(--color-text-muted)] text-xs">No notes yet</p>
+                     </div>
+                  ) : (
+                     <div className="flex flex-col">
+                        {notes.map((note) => (
+                           <SidebarNoteCard
+                              key={note.id}
+                              note={note}
+                              isSelected={selectedNoteId === note.id}
+                              onClick={() => onSelectNote(note.id)}
+                           />
+                        ))}
+                     </div>
+                  )}
                </div>
             )}
          </div>
@@ -147,7 +150,7 @@ interface SidebarNoteCardProps {
    onClick: () => void;
 }
 
-function SidebarNoteCard({ note, isSelected, onClick }: SidebarNoteCardProps) {
+export function SidebarNoteCard({ note, isSelected, onClick }: SidebarNoteCardProps) {
    const formattedDate = new Date(note.updated_at).toLocaleDateString('pt-BR', {
       day: '2-digit',
       month: 'short',

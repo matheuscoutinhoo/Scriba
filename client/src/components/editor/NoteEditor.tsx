@@ -215,17 +215,17 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
          </div>
 
          {/* Title */}
-         <div className="px-4 pt-4 pb-2">
+         <div className="max-w-3xl mx-auto w-full px-8 pt-6 pb-2">
             <Input
                value={title}
                onChange={(e) => handleTitleChange(e.target.value)}
                placeholder="Note title..."
-               className="border-none bg-transparent text-xl font-bold px-0 h-auto focus-visible:ring-0"
+               className="border-none bg-transparent text-2xl font-bold px-0 h-auto focus-visible:ring-0 text-center"
             />
          </div>
 
          {/* Tags */}
-         <div className="px-4 pb-3 flex items-center gap-2 flex-wrap">
+         <div className="max-w-3xl mx-auto w-full px-8 pb-3 flex items-center justify-center gap-2 flex-wrap">
             {tags.map((tag) => (
                <Badge key={tag} onClick={() => removeTag(tag)} className="cursor-pointer">
                   {tag} ×
@@ -242,7 +242,7 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
 
          {/* Content - Line-by-line live preview editor */}
          <div
-            className="flex-1 overflow-y-auto px-4 py-2"
+            className="flex-1 overflow-y-auto px-8 py-4 max-w-3xl mx-auto w-full"
             onMouseDown={(e) => {
                if (e.target === e.currentTarget) {
                   e.preventDefault();

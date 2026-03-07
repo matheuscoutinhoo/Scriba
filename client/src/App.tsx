@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { NoteEditor } from '@/components/editor/NoteEditor';
 import { CreateCategoryDialog } from '@/components/dialogs/CreateCategoryDialog';
-import { useNotes, useCreateNote, useUpdateNote, useDeleteNote, useSearchNotes } from '@/hooks/useNotes';
+import { useNotes, useNote, useCreateNote, useUpdateNote, useDeleteNote, useSearchNotes } from '@/hooks/useNotes';
 import { useCreateCategory } from '@/hooks/useCategories';
 import type { UpdateNotePayload } from '@/lib/types';
 
@@ -22,9 +22,7 @@ function ScribaApp() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
 
-  const { data: notes = [] } = useNotes(
-    searchQuery ? undefined : { category_id: selectedCategoryId || undefined }
-  );
+  const { data: notes = [] } = useNotes();
   const { data: searchResults = [] } = useSearchNotes(searchQuery);
   const createNote = useCreateNote();
   const updateNote = useUpdateNote();
@@ -32,7 +30,8 @@ function ScribaApp() {
   const createCategory = useCreateCategory();
 
   const displayedNotes = searchQuery ? searchResults : notes;
-  const selectedNote = displayedNotes.find(n => n.id === selectedNoteId) ?? null;
+  const { data: individualNote } = useNote(selectedNoteId || undefined);
+  const selectedNote = displayedNotes.find(n => n.id === selectedNoteId) ?? individualNote ?? null;
 
   const handleNewNote = useCallback(() => {
     createNote.mutate(
@@ -74,7 +73,6 @@ function ScribaApp() {
         selectedNoteId={selectedNoteId}
         onSelectCategory={(id) => {
           setSelectedCategoryId(id);
-          setSelectedNoteId(null);
           setSearchQuery('');
         }}
         onSearch={setSearchQuery}
