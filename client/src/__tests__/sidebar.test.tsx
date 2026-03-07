@@ -127,7 +127,7 @@ describe('Sidebar', () => {
       render(<Sidebar {...defaultProps} notes={notes} />);
 
       await user.click(screen.getByText('Notes'));
-      const noteCard = screen.getByText('Draggable').closest('button');
+      const noteCard = screen.getByText('Draggable').closest('[draggable]');
       expect(noteCard).toHaveAttribute('draggable', 'true');
    });
 

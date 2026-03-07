@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Plus, FolderPlus, Pin, Archive, Clock, FolderOpen, FileText } from 'lucide-react';
+import { Search, Plus, FolderPlus, Pin, PinOff, Archive, Trash2, Clock, FolderOpen, FileText } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -20,6 +20,9 @@ interface SidebarProps {
    onNewCategory: () => void;
    onSelectNote: (id: string) => void;
    onMoveNoteToCategory: (noteId: string, categoryId: string | null) => void;
+   onTogglePin: (note: Note) => void;
+   onToggleArchive: (note: Note) => void;
+   onDeleteNote: (id: string) => void;
 }
 
 export function Sidebar({
@@ -33,6 +36,9 @@ export function Sidebar({
    onNewCategory,
    onSelectNote,
    onMoveNoteToCategory,
+   onTogglePin,
+   onToggleArchive,
+   onDeleteNote,
 }: SidebarProps) {
    const [activeTab, setActiveTab] = useState<SidebarTab>('categories');
    const [tabAnimKey, setTabAnimKey] = useState(0);
@@ -125,6 +131,9 @@ export function Sidebar({
                         onDropNote={onMoveNoteToCategory}
                         selectedNoteId={selectedNoteId}
                         onSelectNote={onSelectNote}
+                        onTogglePin={onTogglePin}
+                        onToggleArchive={onToggleArchive}
+                        onDeleteNote={onDeleteNote}
                      />
                   </div>
                ) : (
@@ -150,6 +159,9 @@ export function Sidebar({
                                  note={note}
                                  isSelected={selectedNoteId === note.id}
                                  onClick={() => onSelectNote(note.id)}
+                                 onTogglePin={() => onTogglePin(note)}
+                                 onToggleArchive={() => onToggleArchive(note)}
+                                 onDelete={() => onDeleteNote(note.id)}
                               />
                            ))}
                         </div>
@@ -166,28 +178,31 @@ interface SidebarNoteCardProps {
    note: Note;
    isSelected: boolean;
    onClick: () => void;
+   onTogglePin?: () => void;
+   onToggleArchive?: () => void;
+   onDelete?: () => void;
 }
 
-export function SidebarNoteCard({ note, isSelected, onClick }: SidebarNoteCardProps) {
+export function SidebarNoteCard({ note, isSelected, onClick, onTogglePin, onToggleArchive, onDelete }: SidebarNoteCardProps) {
    const formattedDate = new Date(note.updated_at).toLocaleDateString('pt-BR', {
       day: '2-digit',
       month: 'short',
    });
 
    return (
-      <button
-         onClick={onClick}
+      <div
+         className={cn(
+            'group relative w-full text-left px-3 py-2 border-b border-[var(--color-border)] transition-colors cursor-pointer',
+            isSelected
+               ? 'bg-[var(--color-accent-soft)] border-l-2 border-l-[var(--color-accent)]'
+               : 'hover:bg-[var(--color-bg-hover)]'
+         )}
          draggable
          onDragStart={(e) => {
             e.dataTransfer.setData('text/x-note-id', note.id);
             e.dataTransfer.effectAllowed = 'move';
          }}
-         className={cn(
-            'w-full text-left px-3 py-2 border-b border-[var(--color-border)] transition-colors cursor-pointer',
-            isSelected
-               ? 'bg-[var(--color-accent-soft)] border-l-2 border-l-[var(--color-accent)]'
-               : 'hover:bg-[var(--color-bg-hover)]'
-         )}
+         onClick={onClick}
       >
          <div className="flex items-start justify-between gap-2">
             <h3 className="text-xs font-medium truncate flex-1">
@@ -195,13 +210,46 @@ export function SidebarNoteCard({ note, isSelected, onClick }: SidebarNoteCardPr
             </h3>
             <div className="flex items-center gap-1 flex-shrink-0">
                {note.is_pinned === 1 && (
-                  <Pin className="h-3 w-3 text-[var(--color-accent)]" />
+                  <Pin className="h-3 w-3 text-[var(--color-accent)] group-hover:hidden" />
                )}
                {note.is_archived === 1 && (
-                  <Archive className="h-3 w-3 text-[var(--color-text-muted)]" />
+                  <Archive className="h-3 w-3 text-[var(--color-text-muted)] group-hover:hidden" />
                )}
             </div>
          </div>
+
+         {/* Hover action buttons */}
+         {(onTogglePin || onToggleArchive || onDelete) && (
+            <div className="absolute right-2 top-1.5 hidden group-hover:flex items-center gap-0.5 bg-[var(--color-bg-secondary)] rounded shadow-sm border border-[var(--color-border)] px-0.5 py-0.5">
+               {onTogglePin && (
+                  <button
+                     onClick={(e) => { e.stopPropagation(); onTogglePin(); }}
+                     className="p-0.5 rounded hover:bg-[var(--color-bg-hover)] text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors cursor-pointer"
+                     title={note.is_pinned === 1 ? 'Unpin' : 'Pin'}
+                  >
+                     {note.is_pinned === 1 ? <PinOff className="h-3 w-3" /> : <Pin className="h-3 w-3" />}
+                  </button>
+               )}
+               {onToggleArchive && (
+                  <button
+                     onClick={(e) => { e.stopPropagation(); onToggleArchive(); }}
+                     className="p-0.5 rounded hover:bg-[var(--color-bg-hover)] text-[var(--color-text-muted)] hover:text-[var(--color-warning)] transition-colors cursor-pointer"
+                     title={note.is_archived === 1 ? 'Unarchive' : 'Archive'}
+                  >
+                     <Archive className="h-3 w-3" />
+                  </button>
+               )}
+               {onDelete && (
+                  <button
+                     onClick={(e) => { e.stopPropagation(); onDelete(); }}
+                     className="p-0.5 rounded hover:bg-[var(--color-bg-hover)] text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors cursor-pointer"
+                     title="Delete"
+                  >
+                     <Trash2 className="h-3 w-3" />
+                  </button>
+               )}
+            </div>
+         )}
 
          {note.excerpt && (
             <p className="text-[10px] text-[var(--color-text-muted)] mt-0.5 line-clamp-1">
@@ -227,6 +275,6 @@ export function SidebarNoteCard({ note, isSelected, onClick }: SidebarNoteCardPr
                {formattedDate}
             </span>
          </div>
-      </button>
+      </div>
    );
 }

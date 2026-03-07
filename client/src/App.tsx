@@ -65,6 +65,14 @@ function ScribaApp() {
     updateNote.mutate({ id: noteId, category_id: categoryId });
   }, [updateNote]);
 
+  const handleTogglePin = useCallback((note: { id: string; is_pinned: number }) => {
+    updateNote.mutate({ id: note.id, is_pinned: !note.is_pinned });
+  }, [updateNote]);
+
+  const handleToggleArchive = useCallback((note: { id: string; is_archived: number }) => {
+    updateNote.mutate({ id: note.id, is_archived: !note.is_archived });
+  }, [updateNote]);
+
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar
@@ -81,6 +89,9 @@ function ScribaApp() {
         onNewCategory={() => setShowCategoryDialog(true)}
         onSelectNote={setSelectedNoteId}
         onMoveNoteToCategory={handleMoveNoteToCategory}
+        onTogglePin={handleTogglePin}
+        onToggleArchive={handleToggleArchive}
+        onDeleteNote={handleDeleteNote}
       />
 
       {/* Editor */}

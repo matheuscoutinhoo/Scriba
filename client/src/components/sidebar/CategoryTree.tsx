@@ -1,9 +1,9 @@
-import { Folder, FolderOpen, ChevronRight, ChevronDown, FileText } from 'lucide-react';
+import { Folder, FolderOpen, ChevronRight, ChevronDown, FileText, Pin, PinOff, Archive, Trash2 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useCategories } from '@/hooks/useCategories';
 import { useNotes } from '@/hooks/useNotes';
 import { cn } from '@/lib/utils';
-import type { Category } from '@/lib/types';
+import type { Category, Note } from '@/lib/types';
 
 interface CategoryTreeProps {
    selectedId: string | null;
@@ -11,9 +11,12 @@ interface CategoryTreeProps {
    onDropNote: (noteId: string, categoryId: string | null) => void;
    selectedNoteId?: string | null;
    onSelectNote?: (id: string) => void;
+   onTogglePin?: (note: Note) => void;
+   onToggleArchive?: (note: Note) => void;
+   onDeleteNote?: (id: string) => void;
 }
 
-export function CategoryTree({ selectedId, onSelect, onDropNote, selectedNoteId, onSelectNote }: CategoryTreeProps) {
+export function CategoryTree({ selectedId, onSelect, onDropNote, selectedNoteId, onSelectNote, onTogglePin, onToggleArchive, onDeleteNote }: CategoryTreeProps) {
    const { data: categories, isLoading } = useCategories();
    const [dragOverAllNotes, setDragOverAllNotes] = useState(false);
    const [allNotesExpanded, setAllNotesExpanded] = useState(false);
@@ -93,25 +96,30 @@ export function CategoryTree({ selectedId, onSelect, onDropNote, selectedNoteId,
          >
             <div ref={allNotesContentRef}>
                {sortedNotes.map((note) => (
-                  <button
+                  <div
                      key={note.id}
-                     onClick={() => onSelectNote?.(note.id)}
-                     draggable
-                     onDragStart={(e) => {
-                        e.dataTransfer.setData('text/x-note-id', note.id);
-                        e.dataTransfer.effectAllowed = 'move';
-                     }}
-                     className={cn(
-                        'w-full text-left py-1 text-xs flex items-center gap-1.5 transition-colors cursor-pointer',
-                        selectedNoteId === note.id
-                           ? 'bg-[var(--color-accent-soft)] text-[var(--color-accent)]'
-                           : 'text-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-secondary)]'
-                     )}
-                     style={{ paddingLeft: '28px' }}
+                     className="group relative"
                   >
-                     <FileText className="h-3 w-3 flex-shrink-0" />
-                     <span className="truncate">{note.title || 'Untitled'}</span>
-                  </button>
+                     <button
+                        onClick={() => onSelectNote?.(note.id)}
+                        draggable
+                        onDragStart={(e) => {
+                           e.dataTransfer.setData('text/x-note-id', note.id);
+                           e.dataTransfer.effectAllowed = 'move';
+                        }}
+                        className={cn(
+                           'w-full text-left py-1 text-xs flex items-center gap-1.5 transition-colors cursor-pointer',
+                           selectedNoteId === note.id
+                              ? 'bg-[var(--color-accent-soft)] text-[var(--color-accent)]'
+                              : 'text-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-secondary)]'
+                        )}
+                        style={{ paddingLeft: '28px' }}
+                     >
+                        <FileText className="h-3 w-3 flex-shrink-0" />
+                        <span className="truncate">{note.title || 'Untitled'}</span>
+                     </button>
+                     <NoteActionButtons note={note} onTogglePin={onTogglePin} onToggleArchive={onToggleArchive} onDeleteNote={onDeleteNote} right="4px" />
+                  </div>
                ))}
             </div>
          </div>
@@ -125,6 +133,9 @@ export function CategoryTree({ selectedId, onSelect, onDropNote, selectedNoteId,
                onDropNote={onDropNote}
                selectedNoteId={selectedNoteId}
                onSelectNote={onSelectNote}
+               onTogglePin={onTogglePin}
+               onToggleArchive={onToggleArchive}
+               onDeleteNote={onDeleteNote}
                depth={0}
             />
          ))}
@@ -145,10 +156,13 @@ interface CategoryNodeProps {
    onDropNote: (noteId: string, categoryId: string) => void;
    selectedNoteId?: string | null;
    onSelectNote?: (id: string) => void;
+   onTogglePin?: (note: Note) => void;
+   onToggleArchive?: (note: Note) => void;
+   onDeleteNote?: (id: string) => void;
    depth: number;
 }
 
-function CategoryNode({ category, selectedId, onSelect, onDropNote, selectedNoteId, onSelectNote, depth }: CategoryNodeProps) {
+function CategoryNode({ category, selectedId, onSelect, onDropNote, selectedNoteId, onSelectNote, onTogglePin, onToggleArchive, onDeleteNote, depth }: CategoryNodeProps) {
    const [expanded, setExpanded] = useState(false);
    const [isDragOver, setIsDragOver] = useState(false);
    const contentRef = useRef<HTMLDivElement>(null);
@@ -244,34 +258,86 @@ function CategoryNode({ category, selectedId, onSelect, onDropNote, selectedNote
                      onDropNote={onDropNote}
                      selectedNoteId={selectedNoteId}
                      onSelectNote={onSelectNote}
+                     onTogglePin={onTogglePin}
+                     onToggleArchive={onToggleArchive}
+                     onDeleteNote={onDeleteNote}
                      depth={depth + 1}
                   />
                ))}
 
                {/* Notes inside this category */}
                {categoryNotes?.map((note) => (
-                  <button
+                  <div
                      key={note.id}
-                     onClick={() => onSelectNote?.(note.id)}
-                     draggable
-                     onDragStart={(e) => {
-                        e.dataTransfer.setData('text/x-note-id', note.id);
-                        e.dataTransfer.effectAllowed = 'move';
-                     }}
-                     className={cn(
-                        'w-full text-left py-1 text-xs flex items-center gap-1.5 transition-colors cursor-pointer',
-                        selectedNoteId === note.id
-                           ? 'bg-[var(--color-accent-soft)] text-[var(--color-accent)]'
-                           : 'text-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-secondary)]'
-                     )}
-                     style={{ paddingLeft: `${28 + depth * 16}px` }}
+                     className="group relative"
                   >
-                     <FileText className="h-3 w-3 flex-shrink-0" />
-                     <span className="truncate">{note.title || 'Untitled'}</span>
-                  </button>
+                     <button
+                        onClick={() => onSelectNote?.(note.id)}
+                        draggable
+                        onDragStart={(e) => {
+                           e.dataTransfer.setData('text/x-note-id', note.id);
+                           e.dataTransfer.effectAllowed = 'move';
+                        }}
+                        className={cn(
+                           'w-full text-left py-1 text-xs flex items-center gap-1.5 transition-colors cursor-pointer',
+                           selectedNoteId === note.id
+                              ? 'bg-[var(--color-accent-soft)] text-[var(--color-accent)]'
+                              : 'text-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-secondary)]'
+                        )}
+                        style={{ paddingLeft: `${28 + depth * 16}px` }}
+                     >
+                        <FileText className="h-3 w-3 flex-shrink-0" />
+                        <span className="truncate">{note.title || 'Untitled'}</span>
+                     </button>
+                     <NoteActionButtons note={note} onTogglePin={onTogglePin} onToggleArchive={onToggleArchive} onDeleteNote={onDeleteNote} right="4px" />
+                  </div>
                ))}
             </div>
          </div>
+      </div>
+   );
+}
+
+function NoteActionButtons({ note, onTogglePin, onToggleArchive, onDeleteNote, right }: {
+   note: Note;
+   onTogglePin?: (note: Note) => void;
+   onToggleArchive?: (note: Note) => void;
+   onDeleteNote?: (id: string) => void;
+   right?: string;
+}) {
+   if (!onTogglePin && !onToggleArchive && !onDeleteNote) return null;
+   return (
+      <div
+         className="absolute top-1/2 -translate-y-1/2 hidden group-hover:flex items-center gap-0.5 bg-[var(--color-bg-secondary)] rounded shadow-sm border border-[var(--color-border)] px-0.5 py-0.5"
+         style={{ right: right ?? '4px' }}
+      >
+         {onTogglePin && (
+            <button
+               onClick={(e) => { e.stopPropagation(); onTogglePin(note); }}
+               className="p-0.5 rounded hover:bg-[var(--color-bg-hover)] text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors cursor-pointer"
+               title={note.is_pinned === 1 ? 'Unpin' : 'Pin'}
+            >
+               {note.is_pinned === 1 ? <PinOff className="h-3 w-3" /> : <Pin className="h-3 w-3" />}
+            </button>
+         )}
+         {onToggleArchive && (
+            <button
+               onClick={(e) => { e.stopPropagation(); onToggleArchive(note); }}
+               className="p-0.5 rounded hover:bg-[var(--color-bg-hover)] text-[var(--color-text-muted)] hover:text-[var(--color-warning)] transition-colors cursor-pointer"
+               title={note.is_archived === 1 ? 'Unarchive' : 'Archive'}
+            >
+               <Archive className="h-3 w-3" />
+            </button>
+         )}
+         {onDeleteNote && (
+            <button
+               onClick={(e) => { e.stopPropagation(); onDeleteNote(note.id); }}
+               className="p-0.5 rounded hover:bg-[var(--color-bg-hover)] text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors cursor-pointer"
+               title="Delete"
+            >
+               <Trash2 className="h-3 w-3" />
+            </button>
+         )}
       </div>
    );
 }
