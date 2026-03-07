@@ -1,19 +1,18 @@
 import type { Request, Response } from 'express';
 import { CategoryService } from '../services/CategoryService.js';
-import { createCategorySchema, updateCategorySchema } from '../models/validation.js';
-import { ZodError } from 'zod';
+import { DEFAULT_USER_ID } from '../lib/constants.js';
 
 export class CategoryController {
    constructor(private service: CategoryService) { }
 
    getAll = (req: Request, res: Response): void => {
-      const userId = req.params.userId || 'default-user';
+      const userId = req.params.userId || DEFAULT_USER_ID;
       const categories = this.service.getAll(userId);
       res.json({ data: categories });
    };
 
    getById = (req: Request, res: Response): void => {
-      const userId = req.params.userId || 'default-user';
+      const userId = req.params.userId || DEFAULT_USER_ID;
       const category = this.service.getById(req.params.id, userId);
 
       if (!category) {
@@ -25,45 +24,25 @@ export class CategoryController {
    };
 
    create = (req: Request, res: Response): void => {
-      const userId = req.params.userId || 'default-user';
-
-      try {
-         const dto = createCategorySchema.parse(req.body);
-         const category = this.service.create(dto, userId);
-         res.status(201).json({ data: category });
-      } catch (error) {
-         if (error instanceof ZodError) {
-            res.status(400).json({ error: 'Validation failed', details: error.errors });
-            return;
-         }
-         throw error;
-      }
+      const userId = req.params.userId || DEFAULT_USER_ID;
+      const category = this.service.create(req.body, userId);
+      res.status(201).json({ data: category });
    };
 
    update = (req: Request, res: Response): void => {
-      const userId = req.params.userId || 'default-user';
+      const userId = req.params.userId || DEFAULT_USER_ID;
+      const category = this.service.update(req.params.id, req.body, userId);
 
-      try {
-         const dto = updateCategorySchema.parse(req.body);
-         const category = this.service.update(req.params.id, dto, userId);
-
-         if (!category) {
-            res.status(404).json({ error: 'Category not found' });
-            return;
-         }
-
-         res.json({ data: category });
-      } catch (error) {
-         if (error instanceof ZodError) {
-            res.status(400).json({ error: 'Validation failed', details: error.errors });
-            return;
-         }
-         throw error;
+      if (!category) {
+         res.status(404).json({ error: 'Category not found' });
+         return;
       }
+
+      res.json({ data: category });
    };
 
    delete = (req: Request, res: Response): void => {
-      const userId = req.params.userId || 'default-user';
+      const userId = req.params.userId || DEFAULT_USER_ID;
       const deleted = this.service.delete(req.params.id, userId);
 
       if (!deleted) {

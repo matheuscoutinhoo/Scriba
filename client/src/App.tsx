@@ -66,6 +66,7 @@ function ScribaApp() {
     <div className="flex h-screen overflow-hidden">
       <Sidebar
         selectedCategoryId={selectedCategoryId}
+        searchQuery={searchQuery}
         onSelectCategory={(id) => {
           setSelectedCategoryId(id);
           setSelectedNoteId(null);

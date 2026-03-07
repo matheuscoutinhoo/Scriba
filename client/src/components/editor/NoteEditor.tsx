@@ -27,6 +27,13 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
    const editorRef = useRef<HTMLTextAreaElement>(null);
    const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
+   // Cleanup auto-save timer on unmount
+   useEffect(() => {
+      return () => {
+         if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+      };
+   }, []);
+
    // Reset state when note changes
    useEffect(() => {
       setTitle(note.title);

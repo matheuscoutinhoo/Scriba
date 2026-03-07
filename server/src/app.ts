@@ -15,16 +15,9 @@ export function createApp(db: Database): express.Application {
       res.json({ status: 'ok', timestamp: new Date().toISOString() });
    });
 
-   // API routes — using default-user for now (auth to be added later)
-   app.use('/api/notes', (req, _res, next) => {
-      req.params.userId = 'default-user';
-      next();
-   }, createNoteRoutes(db));
-
-   app.use('/api/categories', (req, _res, next) => {
-      req.params.userId = 'default-user';
-      next();
-   }, createCategoryRoutes(db));
+   // API routes
+   app.use('/api/notes', createNoteRoutes(db));
+   app.use('/api/categories', createCategoryRoutes(db));
 
    // Global error handler
    app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

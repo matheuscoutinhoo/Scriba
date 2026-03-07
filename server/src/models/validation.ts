@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { DEFAULT_CATEGORY_COLOR } from '../lib/constants.js';
 
 export const createNoteSchema = z.object({
    title: z.string().min(1, 'Title is required').max(255),
@@ -18,7 +19,7 @@ export const updateNoteSchema = z.object({
 
 export const createCategorySchema = z.object({
    name: z.string().min(1, 'Name is required').max(100),
-   color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional().default('#e11d48'),
+   color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional().default(DEFAULT_CATEGORY_COLOR),
    icon: z.string().max(50).optional(),
    parent_id: z.string().uuid().optional(),
 });

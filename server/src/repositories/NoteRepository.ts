@@ -2,8 +2,11 @@ import { v4 as uuidv4 } from 'uuid';
 import type { Database } from '../database/connection.js';
 import { queryAll, queryOne, execute } from '../database/connection.js';
 import type { Note, NoteWithTags, Tag, CreateNoteDTO, UpdateNoteDTO } from '../models/types.js';
+import type { INoteRepository } from './INoteRepository.js';
+import { slugify, escapeLikePattern } from '../lib/utils.js';
+import { MAX_EXCERPT_LENGTH, DEFAULT_SEARCH_LIMIT } from '../lib/constants.js';
 
-export class NoteRepository {
+export class NoteRepository implements INoteRepository {
    constructor(private db: Database) { }
 
    findAllByUser(userId: string, options?: { archived?: boolean; categoryId?: string }): NoteWithTags[] {
@@ -45,7 +48,9 @@ export class NoteRepository {
          this.syncTags(id, dto.tags, userId);
       }
 
-      return this.findById(id, userId)!;
+      const result = this.findById(id, userId);
+      if (!result) throw new Error(`Failed to create note with id ${id}`);
+      return result;
    }
 
    update(id: string, dto: UpdateNoteDTO, userId: string): NoteWithTags | null {
@@ -100,17 +105,17 @@ export class NoteRepository {
       return changes > 0;
    }
 
-   search(userId: string, query: string, limit: number = 20, offset: number = 0): { notes: NoteWithTags[]; total: number } {
-      // Use LIKE-based search since sql.js doesn't support FTS5
-      const pattern = `%${query}%`;
+   search(userId: string, query: string, limit: number = DEFAULT_SEARCH_LIMIT, offset: number = 0): { notes: NoteWithTags[]; total: number } {
+      const escaped = escapeLikePattern(query);
+      const pattern = `%${escaped}%`;
 
       const countResult = queryOne<{ total: number }>(this.db,
-         `SELECT COUNT(*) as total FROM notes WHERE user_id = ? AND (title LIKE ? OR content LIKE ?)`,
+         `SELECT COUNT(*) as total FROM notes WHERE user_id = ? AND (title LIKE ? ESCAPE '$' OR content LIKE ? ESCAPE '$')`,
          [userId, pattern, pattern]
       );
 
       const notes = queryAll<Note>(this.db,
-         `SELECT * FROM notes WHERE user_id = ? AND (title LIKE ? OR content LIKE ?) ORDER BY updated_at DESC LIMIT ? OFFSET ?`,
+         `SELECT * FROM notes WHERE user_id = ? AND (title LIKE ? ESCAPE '$' OR content LIKE ? ESCAPE '$') ORDER BY updated_at DESC LIMIT ? OFFSET ?`,
          [userId, pattern, pattern, limit, offset]
       );
 
@@ -132,7 +137,7 @@ export class NoteRepository {
       execute(this.db, `DELETE FROM note_tags WHERE note_id = ?`, [noteId]);
 
       for (const name of tagNames) {
-         const slug = this.slugify(name);
+         const slug = slugify(name);
          let tag = queryOne<Tag>(this.db,
             `SELECT * FROM tags WHERE slug = ? AND user_id = ?`,
             [slug, userId]
@@ -156,15 +161,6 @@ export class NoteRepository {
 
    private generateExcerpt(content: string): string {
       const plain = content.replace(/[#*_`~\[\]()>!|-]/g, '').trim();
-      return plain.length > 200 ? plain.substring(0, 200) + '...' : plain;
-   }
-
-   private slugify(text: string): string {
-      return text
-         .toLowerCase()
-         .trim()
-         .replace(/[^\w\s-]/g, '')
-         .replace(/[\s_]+/g, '-')
-         .replace(/-+/g, '-');
+      return plain.length > MAX_EXCERPT_LENGTH ? plain.substring(0, MAX_EXCERPT_LENGTH) + '...' : plain;
    }
 }

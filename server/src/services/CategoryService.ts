@@ -1,13 +1,8 @@
-import type { Database } from '../database/connection.js';
-import { CategoryRepository } from '../repositories/CategoryRepository.js';
+import type { ICategoryRepository } from '../repositories/ICategoryRepository.js';
 import type { Category, CategoryWithCount, CreateCategoryDTO, UpdateCategoryDTO } from '../models/types.js';
 
 export class CategoryService {
-   private repository: CategoryRepository;
-
-   constructor(db: Database) {
-      this.repository = new CategoryRepository(db);
-   }
+   constructor(private repository: ICategoryRepository) { }
 
    getAll(userId: string): CategoryWithCount[] {
       return this.repository.findAllByUser(userId);

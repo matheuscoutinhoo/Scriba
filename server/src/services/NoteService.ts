@@ -1,13 +1,8 @@
-import type { Database } from '../database/connection.js';
-import { NoteRepository } from '../repositories/NoteRepository.js';
+import type { INoteRepository } from '../repositories/INoteRepository.js';
 import type { CreateNoteDTO, UpdateNoteDTO, NoteWithTags, SearchResult } from '../models/types.js';
 
 export class NoteService {
-   private repository: NoteRepository;
-
-   constructor(db: Database) {
-      this.repository = new NoteRepository(db);
-   }
+   constructor(private repository: INoteRepository) { }
 
    getAll(userId: string, options?: { archived?: boolean; categoryId?: string }): NoteWithTags[] {
       return this.repository.findAllByUser(userId, options);

@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Search, Plus, FolderPlus } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -7,6 +6,7 @@ import { cn } from '@/lib/utils';
 
 interface SidebarProps {
    selectedCategoryId: string | null;
+   searchQuery: string;
    onSelectCategory: (id: string | null) => void;
    onSearch: (query: string) => void;
    onNewNote: () => void;
@@ -15,17 +15,12 @@ interface SidebarProps {
 
 export function Sidebar({
    selectedCategoryId,
+   searchQuery,
    onSelectCategory,
    onSearch,
    onNewNote,
    onNewCategory,
 }: SidebarProps) {
-   const [searchQuery, setSearchQuery] = useState('');
-
-   const handleSearch = (value: string) => {
-      setSearchQuery(value);
-      onSearch(value);
-   };
 
    return (
       <aside className="w-64 h-screen flex flex-col border-r border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
@@ -44,7 +39,7 @@ export function Sidebar({
                <Input
                   placeholder="Search notes..."
                   value={searchQuery}
-                  onChange={(e) => handleSearch(e.target.value)}
+                  onChange={(e) => onSearch(e.target.value)}
                   className="pl-8 h-8 text-xs"
                />
             </div>

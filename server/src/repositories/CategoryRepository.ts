@@ -2,8 +2,11 @@ import { v4 as uuidv4 } from 'uuid';
 import type { Database } from '../database/connection.js';
 import { queryAll, queryOne, execute } from '../database/connection.js';
 import type { Category, CategoryWithCount, CreateCategoryDTO, UpdateCategoryDTO } from '../models/types.js';
+import type { ICategoryRepository } from './ICategoryRepository.js';
+import { slugify } from '../lib/utils.js';
+import { DEFAULT_CATEGORY_COLOR } from '../lib/constants.js';
 
-export class CategoryRepository {
+export class CategoryRepository implements ICategoryRepository {
    constructor(private db: Database) { }
 
    findAllByUser(userId: string): CategoryWithCount[] {
@@ -28,14 +31,16 @@ export class CategoryRepository {
 
    create(dto: CreateCategoryDTO, userId: string): Category {
       const id = uuidv4();
-      const slug = this.slugify(dto.name);
+      const slug = slugify(dto.name);
 
       execute(this.db,
          `INSERT INTO categories (id, name, slug, color, icon, user_id, parent_id) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-         [id, dto.name, slug, dto.color || '#e11d48', dto.icon || null, userId, dto.parent_id || null]
+         [id, dto.name, slug, dto.color || DEFAULT_CATEGORY_COLOR, dto.icon || null, userId, dto.parent_id || null]
       );
 
-      return this.findById(id, userId)!;
+      const result = this.findById(id, userId);
+      if (!result) throw new Error(`Failed to create category with id ${id}`);
+      return result;
    }
 
    update(id: string, dto: UpdateCategoryDTO, userId: string): Category | null {
@@ -47,7 +52,7 @@ export class CategoryRepository {
 
       if (dto.name !== undefined) {
          fields.push('name = ?', 'slug = ?');
-         values.push(dto.name, this.slugify(dto.name));
+         values.push(dto.name, slugify(dto.name));
       }
       if (dto.color !== undefined) {
          fields.push('color = ?');
@@ -104,14 +109,5 @@ export class CategoryRepository {
       }
 
       return roots;
-   }
-
-   private slugify(text: string): string {
-      return text
-         .toLowerCase()
-         .trim()
-         .replace(/[^\w\s-]/g, '')
-         .replace(/[\s_]+/g, '-')
-         .replace(/-+/g, '-');
    }
 }

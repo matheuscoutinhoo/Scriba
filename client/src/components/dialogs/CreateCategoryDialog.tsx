@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -17,6 +17,14 @@ const COLORS = [
 export function CreateCategoryDialog({ isOpen, onClose, onCreate }: CreateCategoryDialogProps) {
    const [name, setName] = useState('');
    const [color, setColor] = useState(COLORS[0]);
+
+   // Reset form state when dialog opens
+   useEffect(() => {
+      if (isOpen) {
+         setName('');
+         setColor(COLORS[0]);
+      }
+   }, [isOpen]);
 
    if (!isOpen) return null;
 
