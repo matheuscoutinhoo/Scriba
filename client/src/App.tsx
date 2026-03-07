@@ -31,7 +31,8 @@ function ScribaApp() {
 
   const displayedNotes = searchQuery ? searchResults : notes;
   const { data: individualNote } = useNote(selectedNoteId || undefined);
-  const selectedNote = displayedNotes.find(n => n.id === selectedNoteId) ?? individualNote ?? null;
+  const foundNote = displayedNotes.find(n => n.id === selectedNoteId) ?? individualNote ?? null;
+  const selectedNote = foundNote && foundNote.content !== undefined ? foundNote : null;
 
   const handleNewNote = useCallback(() => {
     createNote.mutate(

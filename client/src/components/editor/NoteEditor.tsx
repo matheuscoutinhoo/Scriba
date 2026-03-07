@@ -15,8 +15,8 @@ interface NoteEditorProps {
 }
 
 export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
-   const [title, setTitle] = useState(note.title);
-   const [content, setContent] = useState(note.content);
+   const [title, setTitle] = useState(note.title ?? '');
+   const [content, setContent] = useState(note.content ?? '');
    const [tagInput, setTagInput] = useState('');
    const [tags, setTags] = useState<string[]>((note.tags ?? []).map(t => t.name));
    const [editingLineIndex, setEditingLineIndex] = useState<number | null>(null);
