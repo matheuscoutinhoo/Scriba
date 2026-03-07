@@ -7,72 +7,72 @@ export type Database = SqlJsDatabase;
 let db: Database | null = null;
 
 export async function getDatabase(dbPath?: string): Promise<Database> {
-  if (db) return db;
+   if (db) return db;
 
-  const SQL = await initSqlJs();
-  const resolvedPath = dbPath || path.resolve(process.cwd(), 'scriba.db');
+   const SQL = await initSqlJs();
+   const resolvedPath = dbPath || path.resolve(process.cwd(), 'scriba.db');
 
-  let data: Buffer | undefined;
-  try {
-    data = fs.readFileSync(resolvedPath);
-  } catch {
-    // DB file doesn't exist yet
-  }
+   let data: Buffer | undefined;
+   try {
+      data = fs.readFileSync(resolvedPath);
+   } catch {
+      // DB file doesn't exist yet
+   }
 
-  db = data ? new SQL.Database(data) : new SQL.Database();
-  db.run('PRAGMA foreign_keys = ON');
+   db = data ? new SQL.Database(data) : new SQL.Database();
+   db.run('PRAGMA foreign_keys = ON');
 
-  return db;
+   return db;
 }
 
 export async function createTestDatabase(): Promise<Database> {
-  const SQL = await initSqlJs();
-  const testDb = new SQL.Database();
-  testDb.run('PRAGMA foreign_keys = ON');
-  initializeSchema(testDb);
-  return testDb;
+   const SQL = await initSqlJs();
+   const testDb = new SQL.Database();
+   testDb.run('PRAGMA foreign_keys = ON');
+   initializeSchema(testDb);
+   return testDb;
 }
 
 export function saveDatabase(dbPath?: string): void {
-  if (!db) return;
-  const resolvedPath = dbPath || path.resolve(process.cwd(), 'scriba.db');
-  const data = db.export();
-  fs.writeFileSync(resolvedPath, Buffer.from(data));
+   if (!db) return;
+   const resolvedPath = dbPath || path.resolve(process.cwd(), 'scriba.db');
+   const data = db.export();
+   fs.writeFileSync(resolvedPath, Buffer.from(data));
 }
 
 export function closeDatabase(): void {
-  if (db) {
-    db.close();
-    db = null;
-  }
+   if (db) {
+      db.close();
+      db = null;
+   }
 }
 
 /** Helper: run a query and return all rows as objects */
 export function queryAll<T = Record<string, unknown>>(database: Database, sql: string, params: unknown[] = []): T[] {
-  const stmt = database.prepare(sql);
-  stmt.bind(params.map(p => p === undefined ? null : p) as (string | number | null | Uint8Array)[]);
-  const results: T[] = [];
-  while (stmt.step()) {
-    results.push(stmt.getAsObject() as T);
-  }
-  stmt.free();
-  return results;
+   const stmt = database.prepare(sql);
+   stmt.bind(params.map(p => p === undefined ? null : p) as (string | number | null | Uint8Array)[]);
+   const results: T[] = [];
+   while (stmt.step()) {
+      results.push(stmt.getAsObject() as T);
+   }
+   stmt.free();
+   return results;
 }
 
 /** Helper: run a query and return the first row as object */
 export function queryOne<T = Record<string, unknown>>(database: Database, sql: string, params: unknown[] = []): T | null {
-  const results = queryAll<T>(database, sql, params);
-  return results[0] ?? null;
+   const results = queryAll<T>(database, sql, params);
+   return results[0] ?? null;
 }
 
 /** Helper: run a mutating query (INSERT/UPDATE/DELETE) */
 export function execute(database: Database, sql: string, params: unknown[] = []): number {
-  database.run(sql, params.map(p => p === undefined ? null : p) as (string | number | null | Uint8Array)[]);
-  return database.getRowsModified();
+   database.run(sql, params.map(p => p === undefined ? null : p) as (string | number | null | Uint8Array)[]);
+   return database.getRowsModified();
 }
 
 export function initializeSchema(database: Database): void {
-  database.run(`
+   database.run(`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
       username TEXT NOT NULL UNIQUE,
@@ -84,7 +84,7 @@ export function initializeSchema(database: Database): void {
     )
   `);
 
-  database.run(`
+   database.run(`
     CREATE TABLE IF NOT EXISTS categories (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
@@ -102,7 +102,7 @@ export function initializeSchema(database: Database): void {
     )
   `);
 
-  database.run(`
+   database.run(`
     CREATE TABLE IF NOT EXISTS notes (
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,
@@ -120,7 +120,7 @@ export function initializeSchema(database: Database): void {
     )
   `);
 
-  database.run(`
+   database.run(`
     CREATE TABLE IF NOT EXISTS tags (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
@@ -132,7 +132,7 @@ export function initializeSchema(database: Database): void {
     )
   `);
 
-  database.run(`
+   database.run(`
     CREATE TABLE IF NOT EXISTS note_tags (
       note_id TEXT NOT NULL,
       tag_id TEXT NOT NULL,
@@ -142,12 +142,12 @@ export function initializeSchema(database: Database): void {
     )
   `);
 
-  database.run('CREATE INDEX IF NOT EXISTS idx_notes_user_id ON notes(user_id)');
-  database.run('CREATE INDEX IF NOT EXISTS idx_notes_category_id ON notes(category_id)');
-  database.run('CREATE INDEX IF NOT EXISTS idx_notes_created_at ON notes(created_at)');
-  database.run('CREATE INDEX IF NOT EXISTS idx_notes_updated_at ON notes(updated_at)');
-  database.run('CREATE INDEX IF NOT EXISTS idx_categories_user_id ON categories(user_id)');
-  database.run('CREATE INDEX IF NOT EXISTS idx_tags_user_id ON tags(user_id)');
-  database.run('CREATE INDEX IF NOT EXISTS idx_note_tags_note_id ON note_tags(note_id)');
-  database.run('CREATE INDEX IF NOT EXISTS idx_note_tags_tag_id ON note_tags(tag_id)');
+   database.run('CREATE INDEX IF NOT EXISTS idx_notes_user_id ON notes(user_id)');
+   database.run('CREATE INDEX IF NOT EXISTS idx_notes_category_id ON notes(category_id)');
+   database.run('CREATE INDEX IF NOT EXISTS idx_notes_created_at ON notes(created_at)');
+   database.run('CREATE INDEX IF NOT EXISTS idx_notes_updated_at ON notes(updated_at)');
+   database.run('CREATE INDEX IF NOT EXISTS idx_categories_user_id ON categories(user_id)');
+   database.run('CREATE INDEX IF NOT EXISTS idx_tags_user_id ON tags(user_id)');
+   database.run('CREATE INDEX IF NOT EXISTS idx_note_tags_note_id ON note_tags(note_id)');
+   database.run('CREATE INDEX IF NOT EXISTS idx_note_tags_tag_id ON note_tags(tag_id)');
 }

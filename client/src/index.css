@@ -106,10 +106,25 @@
   color: var(--color-text-primary);
 }
 
-.markdown-body h1 { font-size: 2rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.3em; }
-.markdown-body h2 { font-size: 1.5rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.3em; }
-.markdown-body h3 { font-size: 1.25rem; }
-.markdown-body h4 { font-size: 1.1rem; }
+.markdown-body h1 {
+  font-size: 2rem;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 0.3em;
+}
+
+.markdown-body h2 {
+  font-size: 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 0.3em;
+}
+
+.markdown-body h3 {
+  font-size: 1.25rem;
+}
+
+.markdown-body h4 {
+  font-size: 1.1rem;
+}
 
 .markdown-body p {
   margin-bottom: 1em;
@@ -119,6 +134,7 @@
   color: var(--color-accent);
   text-decoration: none;
 }
+
 .markdown-body a:hover {
   text-decoration: underline;
 }
@@ -154,7 +170,8 @@
   color: var(--color-text-secondary);
 }
 
-.markdown-body ul, .markdown-body ol {
+.markdown-body ul,
+.markdown-body ol {
   padding-left: 1.5em;
   margin-bottom: 1em;
 }
@@ -175,7 +192,8 @@
   margin-bottom: 1em;
 }
 
-.markdown-body th, .markdown-body td {
+.markdown-body th,
+.markdown-body td {
   border: 1px solid var(--color-border);
   padding: 0.5em 0.75em;
   text-align: left;
