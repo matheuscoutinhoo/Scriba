@@ -2,14 +2,11 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeSanitize from 'rehype-sanitize';
-import { Pin, PinOff, Trash2, Archive, Save, Eye, Edit3, Columns } from 'lucide-react';
+import { Pin, PinOff, Trash2, Archive, Save } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
-import { cn } from '@/lib/utils';
 import type { Note, UpdateNotePayload } from '@/lib/types';
-
-type ViewMode = 'edit' | 'preview' | 'split';
 
 interface NoteEditorProps {
    note: Note;
@@ -22,7 +19,7 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
    const [content, setContent] = useState(note.content);
    const [tagInput, setTagInput] = useState('');
    const [tags, setTags] = useState<string[]>(note.tags.map(t => t.name));
-   const [viewMode, setViewMode] = useState<ViewMode>('split');
+   const [isEditing, setIsEditing] = useState(false);
    const [isDirty, setIsDirty] = useState(false);
    const editorRef = useRef<HTMLTextAreaElement>(null);
    const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -40,7 +37,17 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
       setContent(note.content);
       setTags(note.tags.map(t => t.name));
       setIsDirty(false);
+      setIsEditing(false);
    }, [note.id, note.title, note.content, note.tags]);
+
+   // Focus textarea when entering edit mode
+   useEffect(() => {
+      if (isEditing && editorRef.current) {
+         editorRef.current.focus();
+         const len = editorRef.current.value.length;
+         editorRef.current.setSelectionRange(len, len);
+      }
+   }, [isEditing]);
 
    const handleSave = useCallback(() => {
       onSave(note.id, { title, content, tags });
@@ -100,7 +107,7 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
          handleSave();
       }
       // Handle tab for indentation
-      if (e.key === 'Tab' && editorRef.current) {
+      if (e.key === 'Tab' && isEditing && editorRef.current) {
          e.preventDefault();
          const start = editorRef.current.selectionStart;
          const end = editorRef.current.selectionEnd;
@@ -115,40 +122,16 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
    };
 
    return (
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col h-full" onKeyDown={handleKeyDown}>
          {/* Toolbar */}
          <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
             <div className="flex items-center gap-1">
-               <Button
-                  variant={viewMode === 'edit' ? 'secondary' : 'ghost'}
-                  size="sm"
-                  onClick={() => setViewMode('edit')}
-                  title="Edit mode"
-               >
-                  <Edit3 className="h-3.5 w-3.5" />
-               </Button>
-               <Button
-                  variant={viewMode === 'split' ? 'secondary' : 'ghost'}
-                  size="sm"
-                  onClick={() => setViewMode('split')}
-                  title="Split view"
-               >
-                  <Columns className="h-3.5 w-3.5" />
-               </Button>
-               <Button
-                  variant={viewMode === 'preview' ? 'secondary' : 'ghost'}
-                  size="sm"
-                  onClick={() => setViewMode('preview')}
-                  title="Preview mode"
-               >
-                  <Eye className="h-3.5 w-3.5" />
-               </Button>
+               {isDirty && (
+                  <span className="text-[10px] text-[var(--color-warning)]">Unsaved</span>
+               )}
             </div>
 
             <div className="flex items-center gap-1">
-               {isDirty && (
-                  <span className="text-[10px] text-[var(--color-warning)] mr-2">Unsaved</span>
-               )}
                <Button variant="ghost" size="icon" onClick={togglePin} title={note.is_pinned ? 'Unpin' : 'Pin'}>
                   {note.is_pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
                </Button>
@@ -190,31 +173,37 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
             />
          </div>
 
-         {/* Editor / Preview */}
-         <div className="flex-1 flex overflow-hidden" onKeyDown={handleKeyDown}>
-            {/* Editor pane */}
-            {(viewMode === 'edit' || viewMode === 'split') && (
-               <div className={cn('flex-1 overflow-hidden', viewMode === 'split' && 'border-r border-[var(--color-border)]')}>
-                  <textarea
-                     ref={editorRef}
-                     value={content}
-                     onChange={(e) => handleContentChange(e.target.value)}
-                     placeholder="Start writing in Markdown..."
-                     className="w-full h-full resize-none bg-transparent px-4 py-2 text-sm font-[family-name:var(--font-mono)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] outline-none leading-relaxed"
-                     spellCheck={false}
-                  />
-               </div>
-            )}
-
-            {/* Preview pane */}
-            {(viewMode === 'preview' || viewMode === 'split') && (
-               <div className="flex-1 overflow-y-auto px-6 py-2">
+         {/* Content */}
+         <div className="flex-1 overflow-hidden">
+            {isEditing ? (
+               <textarea
+                  ref={editorRef}
+                  value={content}
+                  onChange={(e) => handleContentChange(e.target.value)}
+                  onBlur={() => setIsEditing(false)}
+                  placeholder="Start writing in Markdown..."
+                  className="w-full h-full resize-none bg-transparent px-4 py-2 text-sm font-[family-name:var(--font-mono)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] outline-none leading-relaxed"
+                  spellCheck={false}
+               />
+            ) : (
+               <div
+                  onClick={() => setIsEditing(true)}
+                  className="w-full h-full overflow-y-auto px-6 py-2 cursor-text"
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                     if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setIsEditing(true);
+                     }
+                  }}
+               >
                   <div className="markdown-body">
                      <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
                         rehypePlugins={[rehypeSanitize]}
                      >
-                        {content || '*Start writing to see preview...*'}
+                        {content || '*Click to start writing...*'}
                      </ReactMarkdown>
                   </div>
                </div>

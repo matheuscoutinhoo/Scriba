@@ -42,10 +42,12 @@ describe('NoteEditor', () => {
       vi.useRealTimers();
    });
 
-   it('renders title and content', () => {
+   it('renders title and content in preview mode', () => {
       render(<NoteEditor note={makeNote()} onSave={onSave} onDelete={onDelete} />);
       expect(screen.getByDisplayValue('Test Note')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('# Hello World')).toBeInTheDocument();
+      expect(screen.getByText('# Hello World')).toBeInTheDocument();
+      // Textarea should not be visible in preview mode
+      expect(screen.queryByPlaceholderText('Start writing in Markdown...')).not.toBeInTheDocument();
    });
 
    it('renders tags', () => {
@@ -141,20 +143,44 @@ describe('NoteEditor', () => {
       expect(lastCall[1].tags).toEqual([]);
    });
 
-   it('switches view modes', async () => {
+   it('toggles between preview and edit mode', async () => {
       const user = userEvent.setup();
       render(<NoteEditor note={makeNote()} onSave={onSave} onDelete={onDelete} />);
 
-      // Default is split - both editor and preview should be visible
-      expect(screen.getByPlaceholderText('Start writing in Markdown...')).toBeInTheDocument();
-
-      // Switch to preview only
-      await user.click(screen.getByTitle('Preview mode'));
+      // Default is preview mode - rendered markdown shown, no textarea
       expect(screen.queryByPlaceholderText('Start writing in Markdown...')).not.toBeInTheDocument();
+      expect(screen.getByText('# Hello World')).toBeInTheDocument();
 
-      // Switch to edit only
-      await user.click(screen.getByTitle('Edit mode'));
+      // Click content area to enter edit mode
+      await user.click(screen.getByText('# Hello World'));
       expect(screen.getByPlaceholderText('Start writing in Markdown...')).toBeInTheDocument();
+
+      // Blur to return to preview mode
+      fireEvent.blur(screen.getByPlaceholderText('Start writing in Markdown...'));
+      expect(screen.queryByPlaceholderText('Start writing in Markdown...')).not.toBeInTheDocument();
+      expect(screen.getByText('# Hello World')).toBeInTheDocument();
+   });
+
+   it('allows editing content via click-to-edit', () => {
+      vi.useFakeTimers();
+      render(<NoteEditor note={makeNote()} onSave={onSave} onDelete={onDelete} />);
+
+      // Click preview to enter edit mode
+      fireEvent.click(screen.getByText('# Hello World'));
+
+      // Change content
+      const textarea = screen.getByPlaceholderText('Start writing in Markdown...');
+      fireEvent.change(textarea, { target: { value: '## New Content' } });
+
+      act(() => {
+         vi.advanceTimersByTime(1600);
+      });
+
+      expect(onSave).toHaveBeenCalledWith('note-1', {
+         title: 'Test Note',
+         content: '## New Content',
+         tags: ['react'],
+      });
    });
 
    it('resets state when note changes', () => {
@@ -166,6 +192,6 @@ describe('NoteEditor', () => {
 
       rerender(<NoteEditor note={note2} onSave={onSave} onDelete={onDelete} />);
       expect(screen.getByDisplayValue('Second')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('## Different')).toBeInTheDocument();
+      expect(screen.getByText('## Different')).toBeInTheDocument();
    });
 });
