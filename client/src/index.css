@@ -93,6 +93,123 @@
   color: var(--color-text-primary);
 }
 
+/* Line-by-line live preview (Obsidian-like) */
+.markdown-line {
+  font-size: 0.875rem;
+  line-height: 1.75;
+  color: var(--color-text-primary);
+}
+
+.markdown-line p {
+  margin: 0;
+  padding: 0;
+}
+
+.markdown-line h1,
+.markdown-line h2,
+.markdown-line h3,
+.markdown-line h4,
+.markdown-line h5,
+.markdown-line h6 {
+  font-weight: 700;
+  margin: 0;
+  padding: 0;
+  line-height: 1.4;
+  color: var(--color-text-primary);
+}
+
+.markdown-line h1 {
+  font-size: 1.75rem;
+}
+
+.markdown-line h2 {
+  font-size: 1.375rem;
+}
+
+.markdown-line h3 {
+  font-size: 1.125rem;
+}
+
+.markdown-line h4 {
+  font-size: 1rem;
+}
+
+.markdown-line ul,
+.markdown-line ol {
+  padding-left: 1.5em;
+  margin: 0;
+}
+
+.markdown-line li {
+  margin: 0;
+}
+
+.markdown-line blockquote {
+  border-left: 3px solid var(--color-accent);
+  padding-left: 0.75em;
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.markdown-line code {
+  font-family: var(--font-mono);
+  background-color: var(--color-bg-tertiary);
+  padding: 0.1em 0.35em;
+  border-radius: var(--radius-sm);
+  font-size: 0.85em;
+}
+
+.markdown-line pre {
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.5em 0.75em;
+  overflow-x: auto;
+  margin: 0;
+}
+
+.markdown-line pre code {
+  background: none;
+  padding: 0;
+}
+
+.markdown-line a {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.markdown-line a:hover {
+  text-decoration: underline;
+}
+
+.markdown-line hr {
+  border: none;
+  border-top: 1px solid var(--color-border);
+  margin: 0.25em 0;
+}
+
+.markdown-line img {
+  max-width: 100%;
+  border-radius: var(--radius-md);
+}
+
+.markdown-line input[type="checkbox"] {
+  accent-color: var(--color-accent);
+  margin-right: 0.5em;
+}
+
+.markdown-line strong {
+  font-weight: 700;
+}
+
+.markdown-line em {
+  font-style: italic;
+}
+
+.markdown-line del {
+  text-decoration: line-through;
+}
+
 .markdown-body h1,
 .markdown-body h2,
 .markdown-body h3,

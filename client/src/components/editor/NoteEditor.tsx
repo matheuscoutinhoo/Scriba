@@ -19,10 +19,13 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
    const [content, setContent] = useState(note.content);
    const [tagInput, setTagInput] = useState('');
    const [tags, setTags] = useState<string[]>(note.tags.map(t => t.name));
-   const [isEditing, setIsEditing] = useState(false);
+   const [editingLineIndex, setEditingLineIndex] = useState<number | null>(null);
    const [isDirty, setIsDirty] = useState(false);
-   const editorRef = useRef<HTMLTextAreaElement>(null);
+   const lineInputRef = useRef<HTMLInputElement>(null);
    const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+   const pendingCursorRef = useRef<number | null>(null);
+
+   const lines = content.split('\n');
 
    // Cleanup auto-save timer on unmount
    useEffect(() => {
@@ -37,17 +40,19 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
       setContent(note.content);
       setTags(note.tags.map(t => t.name));
       setIsDirty(false);
-      setIsEditing(false);
+      setEditingLineIndex(null);
    }, [note.id, note.title, note.content, note.tags]);
 
-   // Focus textarea when entering edit mode
+   // Focus line input when editing line changes
    useEffect(() => {
-      if (isEditing && editorRef.current) {
-         editorRef.current.focus();
-         const len = editorRef.current.value.length;
-         editorRef.current.setSelectionRange(len, len);
+      if (editingLineIndex !== null && lineInputRef.current) {
+         lineInputRef.current.focus();
+         const pos = pendingCursorRef.current ?? lineInputRef.current.value.length;
+         const clamped = Math.min(pos, lineInputRef.current.value.length);
+         lineInputRef.current.setSelectionRange(clamped, clamped);
+         pendingCursorRef.current = null;
       }
-   }, [isEditing]);
+   }, [editingLineIndex]);
 
    const handleSave = useCallback(() => {
       onSave(note.id, { title, content, tags });
@@ -62,11 +67,6 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
          setIsDirty(false);
       }, 1500);
    }, [note.id, onSave]);
-
-   const handleContentChange = (value: string) => {
-      setContent(value);
-      handleAutoSave(title, value, tags);
-   };
 
    const handleTitleChange = (value: string) => {
       setTitle(value);
@@ -100,29 +100,96 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
       onSave(note.id, { is_archived: !note.is_archived });
    };
 
-   // Handle keyboard shortcuts
-   const handleKeyDown = (e: React.KeyboardEvent) => {
-      if (e.ctrlKey && e.key === 's') {
+   const handleLineChange = (index: number, value: string) => {
+      const newLines = [...lines];
+      newLines[index] = value;
+      const newContent = newLines.join('\n');
+      setContent(newContent);
+      handleAutoSave(title, newContent, tags);
+   };
+
+   const handleLinePaste = (e: React.ClipboardEvent, index: number) => {
+      const text = e.clipboardData.getData('text/plain');
+      if (!text.includes('\n')) return;
+      e.preventDefault();
+      const input = lineInputRef.current;
+      if (!input) return;
+      const start = input.selectionStart ?? 0;
+      const end = input.selectionEnd ?? 0;
+      const currentLine = lines[index];
+      const pastedLines = (currentLine.substring(0, start) + text + currentLine.substring(end)).split('\n');
+      const newLines = [...lines];
+      newLines.splice(index, 1, ...pastedLines);
+      const newContent = newLines.join('\n');
+      setContent(newContent);
+      handleAutoSave(title, newContent, tags);
+      const lastPastedLine = pastedLines[pastedLines.length - 1];
+      pendingCursorRef.current = lastPastedLine.length - currentLine.substring(end).length;
+      setEditingLineIndex(index + pastedLines.length - 1);
+   };
+
+   const handleLineKeyDown = (e: React.KeyboardEvent, index: number) => {
+      const input = lineInputRef.current;
+
+      if (e.key === 'Enter') {
          e.preventDefault();
-         handleSave();
-      }
-      // Handle tab for indentation
-      if (e.key === 'Tab' && isEditing && editorRef.current) {
+         if (input) {
+            const cursorPos = input.selectionStart ?? 0;
+            const currentLine = lines[index];
+            const before = currentLine.substring(0, cursorPos);
+            const after = currentLine.substring(cursorPos);
+            const newLines = [...lines];
+            newLines.splice(index, 1, before, after);
+            const newContent = newLines.join('\n');
+            setContent(newContent);
+            handleAutoSave(title, newContent, tags);
+            pendingCursorRef.current = 0;
+            setEditingLineIndex(index + 1);
+         }
+      } else if (e.key === 'Backspace') {
+         if (input && input.selectionStart === 0 && input.selectionEnd === 0 && index > 0) {
+            e.preventDefault();
+            const newLines = [...lines];
+            const prevLineLen = newLines[index - 1].length;
+            newLines[index - 1] += newLines[index];
+            newLines.splice(index, 1);
+            const newContent = newLines.join('\n');
+            setContent(newContent);
+            handleAutoSave(title, newContent, tags);
+            pendingCursorRef.current = prevLineLen;
+            setEditingLineIndex(index - 1);
+         }
+      } else if (e.key === 'ArrowUp' && index > 0) {
          e.preventDefault();
-         const start = editorRef.current.selectionStart;
-         const end = editorRef.current.selectionEnd;
-         const newContent = content.substring(0, start) + '  ' + content.substring(end);
-         setContent(newContent);
-         // Restore cursor position
-         requestAnimationFrame(() => {
-            editorRef.current!.selectionStart = start + 2;
-            editorRef.current!.selectionEnd = start + 2;
-         });
+         if (input) pendingCursorRef.current = input.selectionStart ?? 0;
+         setEditingLineIndex(index - 1);
+      } else if (e.key === 'ArrowDown' && index < lines.length - 1) {
+         e.preventDefault();
+         if (input) pendingCursorRef.current = input.selectionStart ?? 0;
+         setEditingLineIndex(index + 1);
+      } else if (e.key === 'Tab') {
+         e.preventDefault();
+         if (input) {
+            const start = input.selectionStart ?? 0;
+            const currentLine = lines[index];
+            const newLine = currentLine.substring(0, start) + '  ' + currentLine.substring(start);
+            handleLineChange(index, newLine);
+            requestAnimationFrame(() => {
+               if (lineInputRef.current) {
+                  lineInputRef.current.setSelectionRange(start + 2, start + 2);
+               }
+            });
+         }
       }
    };
 
    return (
-      <div className="flex flex-col h-full" onKeyDown={handleKeyDown}>
+      <div className="flex flex-col h-full" onKeyDown={(e) => {
+         if (e.ctrlKey && e.key === 's') {
+            e.preventDefault();
+            handleSave();
+         }
+      }}>
          {/* Toolbar */}
          <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
             <div className="flex items-center gap-1">
@@ -173,40 +240,66 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
             />
          </div>
 
-         {/* Content */}
-         <div className="flex-1 overflow-hidden">
-            {isEditing ? (
-               <textarea
-                  ref={editorRef}
-                  value={content}
-                  onChange={(e) => handleContentChange(e.target.value)}
-                  onBlur={() => setIsEditing(false)}
-                  placeholder="Start writing in Markdown..."
-                  className="w-full h-full resize-none bg-transparent px-4 py-2 text-sm font-[family-name:var(--font-mono)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] outline-none leading-relaxed"
-                  spellCheck={false}
-               />
-            ) : (
+         {/* Content - Line-by-line live preview editor */}
+         <div
+            className="flex-1 overflow-y-auto px-4 py-2"
+            onMouseDown={(e) => {
+               if (e.target === e.currentTarget) {
+                  e.preventDefault();
+                  setEditingLineIndex(lines.length - 1);
+               }
+            }}
+         >
+            {content === '' && editingLineIndex === null ? (
                <div
-                  onClick={() => setIsEditing(true)}
-                  className="w-full h-full overflow-y-auto px-6 py-2 cursor-text"
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                     if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        setIsEditing(true);
-                     }
+                  onMouseDown={(e) => {
+                     e.preventDefault();
+                     setEditingLineIndex(0);
                   }}
+                  className="text-sm text-[var(--color-text-muted)] cursor-text italic py-0.5"
                >
-                  <div className="markdown-body">
-                     <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
-                        rehypePlugins={[rehypeSanitize]}
-                     >
-                        {content || '*Click to start writing...*'}
-                     </ReactMarkdown>
-                  </div>
+                  Click to start writing...
                </div>
+            ) : (
+               lines.map((line, index) =>
+                  editingLineIndex === index ? (
+                     <input
+                        key={index}
+                        ref={lineInputRef}
+                        type="text"
+                        value={line}
+                        onChange={(e) => handleLineChange(index, e.target.value)}
+                        onKeyDown={(e) => handleLineKeyDown(e, index)}
+                        onPaste={(e) => handleLinePaste(e, index)}
+                        onBlur={() => setEditingLineIndex(null)}
+                        className="w-full bg-transparent border-none outline-none text-sm font-[family-name:var(--font-mono)] text-[var(--color-text-primary)] leading-relaxed py-0.5 block"
+                        spellCheck={false}
+                        autoComplete="off"
+                     />
+                  ) : (
+                     <div
+                        key={index}
+                        onMouseDown={(e) => {
+                           e.preventDefault();
+                           setEditingLineIndex(index);
+                        }}
+                        className="cursor-text min-h-[1.5em]"
+                     >
+                        {line.trim() === '' ? (
+                           <div className="h-[1.5em]" />
+                        ) : (
+                           <div className="markdown-line">
+                              <ReactMarkdown
+                                 remarkPlugins={[remarkGfm]}
+                                 rehypePlugins={[rehypeSanitize]}
+                              >
+                                 {line}
+                              </ReactMarkdown>
+                           </div>
+                        )}
+                     </div>
+                  )
+               )
             )}
          </div>
       </div>

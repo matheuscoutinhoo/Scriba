@@ -42,12 +42,12 @@ describe('NoteEditor', () => {
       vi.useRealTimers();
    });
 
-   it('renders title and content in preview mode', () => {
+   it('renders title and content as rendered markdown lines', () => {
       render(<NoteEditor note={makeNote()} onSave={onSave} onDelete={onDelete} />);
       expect(screen.getByDisplayValue('Test Note')).toBeInTheDocument();
+      // Content renders as markdown preview (no input visible initially)
       expect(screen.getByText('# Hello World')).toBeInTheDocument();
-      // Textarea should not be visible in preview mode
-      expect(screen.queryByPlaceholderText('Start writing in Markdown...')).not.toBeInTheDocument();
+      expect(screen.queryByDisplayValue('# Hello World')).not.toBeInTheDocument();
    });
 
    it('renders tags', () => {
@@ -143,34 +143,37 @@ describe('NoteEditor', () => {
       expect(lastCall[1].tags).toEqual([]);
    });
 
-   it('toggles between preview and edit mode', async () => {
-      const user = userEvent.setup();
+   it('activates line editing on click and shows input', () => {
       render(<NoteEditor note={makeNote()} onSave={onSave} onDelete={onDelete} />);
 
-      // Default is preview mode - rendered markdown shown, no textarea
-      expect(screen.queryByPlaceholderText('Start writing in Markdown...')).not.toBeInTheDocument();
-      expect(screen.getByText('# Hello World')).toBeInTheDocument();
+      // Line is rendered as markdown preview
+      const renderedLine = screen.getByText('# Hello World');
+      expect(renderedLine).toBeInTheDocument();
 
-      // Click content area to enter edit mode
-      await user.click(screen.getByText('# Hello World'));
-      expect(screen.getByPlaceholderText('Start writing in Markdown...')).toBeInTheDocument();
+      // Click on the line to activate editing (uses mouseDown)
+      fireEvent.mouseDown(renderedLine);
 
-      // Blur to return to preview mode
-      fireEvent.blur(screen.getByPlaceholderText('Start writing in Markdown...'));
-      expect(screen.queryByPlaceholderText('Start writing in Markdown...')).not.toBeInTheDocument();
+      // Now an input should be visible with the raw markdown
+      const lineInput = screen.getByDisplayValue('# Hello World');
+      expect(lineInput).toBeInTheDocument();
+      expect(lineInput.tagName).toBe('INPUT');
+
+      // Blur to deactivate editing
+      fireEvent.blur(lineInput);
+      expect(screen.queryByDisplayValue('# Hello World')).not.toBeInTheDocument();
       expect(screen.getByText('# Hello World')).toBeInTheDocument();
    });
 
-   it('allows editing content via click-to-edit', () => {
+   it('allows editing a line and triggers auto-save', () => {
       vi.useFakeTimers();
       render(<NoteEditor note={makeNote()} onSave={onSave} onDelete={onDelete} />);
 
-      // Click preview to enter edit mode
-      fireEvent.click(screen.getByText('# Hello World'));
+      // Click line to start editing
+      fireEvent.mouseDown(screen.getByText('# Hello World'));
 
-      // Change content
-      const textarea = screen.getByPlaceholderText('Start writing in Markdown...');
-      fireEvent.change(textarea, { target: { value: '## New Content' } });
+      // Change the line content
+      const lineInput = screen.getByDisplayValue('# Hello World');
+      fireEvent.change(lineInput, { target: { value: '## Updated Line' } });
 
       act(() => {
          vi.advanceTimersByTime(1600);
@@ -178,9 +181,43 @@ describe('NoteEditor', () => {
 
       expect(onSave).toHaveBeenCalledWith('note-1', {
          title: 'Test Note',
-         content: '## New Content',
+         content: '## Updated Line',
          tags: ['react'],
       });
+   });
+
+   it('handles Enter key to split line', () => {
+      vi.useFakeTimers();
+      render(<NoteEditor note={makeNote({ content: 'first line' })} onSave={onSave} onDelete={onDelete} />);
+
+      // Click to edit the line
+      fireEvent.mouseDown(screen.getByText('first line'));
+      const lineInput = screen.getByDisplayValue('first line');
+
+      // Simulate Enter key press (cursor at position 5)
+      Object.defineProperty(lineInput, 'selectionStart', { value: 5, writable: true });
+      Object.defineProperty(lineInput, 'selectionEnd', { value: 5, writable: true });
+      fireEvent.keyDown(lineInput, { key: 'Enter' });
+
+      act(() => {
+         vi.advanceTimersByTime(1600);
+      });
+
+      // Content should be split into two lines
+      expect(onSave).toHaveBeenCalledWith('note-1', {
+         title: 'Test Note',
+         content: 'first\n line',
+         tags: ['react'],
+      });
+   });
+
+   it('handles multi-line content with per-line rendering', () => {
+      render(<NoteEditor note={makeNote({ content: '# Title\nSome text\n**bold**' })} onSave={onSave} onDelete={onDelete} />);
+
+      // All three lines should be rendered
+      expect(screen.getByText('# Title')).toBeInTheDocument();
+      expect(screen.getByText('Some text')).toBeInTheDocument();
+      expect(screen.getByText('**bold**')).toBeInTheDocument();
    });
 
    it('resets state when note changes', () => {
