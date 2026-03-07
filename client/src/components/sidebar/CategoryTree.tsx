@@ -11,12 +11,22 @@ interface CategoryTreeProps {
    onDropNote: (noteId: string, categoryId: string | null) => void;
    selectedNoteId?: string | null;
    onSelectNote?: (id: string) => void;
-   onAllNotesClick?: () => void;
 }
 
-export function CategoryTree({ selectedId, onSelect, onDropNote, selectedNoteId, onSelectNote, onAllNotesClick }: CategoryTreeProps) {
+export function CategoryTree({ selectedId, onSelect, onDropNote, selectedNoteId, onSelectNote }: CategoryTreeProps) {
    const { data: categories, isLoading } = useCategories();
    const [dragOverAllNotes, setDragOverAllNotes] = useState(false);
+   const [allNotesExpanded, setAllNotesExpanded] = useState(false);
+   const allNotesContentRef = useRef<HTMLDivElement>(null);
+   const [allNotesHeight, setAllNotesHeight] = useState(0);
+
+   const { data: allNotes } = useNotes(allNotesExpanded ? {} : undefined);
+
+   useEffect(() => {
+      if (allNotesContentRef.current) {
+         setAllNotesHeight(allNotesContentRef.current.scrollHeight);
+      }
+   }, [allNotesExpanded, allNotes]);
 
    if (isLoading) {
       return (
@@ -26,11 +36,18 @@ export function CategoryTree({ selectedId, onSelect, onDropNote, selectedNoteId,
       );
    }
 
+   const sortedNotes = allNotes
+      ? [...allNotes].sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+      : [];
+
    return (
       <div className="space-y-0.5">
          {/* All Notes */}
          <button
-            onClick={() => onAllNotesClick ? onAllNotesClick() : onSelect(null)}
+            onClick={() => {
+               onSelect(null);
+               setAllNotesExpanded((prev) => !prev);
+            }}
             onDragOver={(e) => {
                e.preventDefault();
                e.dataTransfer.dropEffect = 'move';
@@ -51,9 +68,53 @@ export function CategoryTree({ selectedId, onSelect, onDropNote, selectedNoteId,
                   : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)]'
             )}
          >
-            <Folder className="h-3.5 w-3.5 flex-shrink-0" />
+            {allNotesExpanded ? (
+               <ChevronDown className="h-3.5 w-3.5 flex-shrink-0" />
+            ) : (
+               <ChevronRight className="h-3.5 w-3.5 flex-shrink-0" />
+            )}
+            {allNotesExpanded ? (
+               <FolderOpen className="h-3.5 w-3.5 flex-shrink-0" />
+            ) : (
+               <Folder className="h-3.5 w-3.5 flex-shrink-0" />
+            )}
             <span className="truncate flex-1">All Notes</span>
+            {sortedNotes.length > 0 && (
+               <span className="text-[10px] text-[var(--color-text-muted)]">
+                  {sortedNotes.length}
+               </span>
+            )}
          </button>
+
+         {/* All Notes expanded content */}
+         <div
+            className="overflow-hidden transition-all duration-300 ease-in-out"
+            style={{ maxHeight: allNotesExpanded ? `${allNotesHeight}px` : '0px', opacity: allNotesExpanded ? 1 : 0 }}
+         >
+            <div ref={allNotesContentRef}>
+               {sortedNotes.map((note) => (
+                  <button
+                     key={note.id}
+                     onClick={() => onSelectNote?.(note.id)}
+                     draggable
+                     onDragStart={(e) => {
+                        e.dataTransfer.setData('text/x-note-id', note.id);
+                        e.dataTransfer.effectAllowed = 'move';
+                     }}
+                     className={cn(
+                        'w-full text-left py-1 text-xs flex items-center gap-1.5 transition-colors cursor-pointer',
+                        selectedNoteId === note.id
+                           ? 'bg-[var(--color-accent-soft)] text-[var(--color-accent)]'
+                           : 'text-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-secondary)]'
+                     )}
+                     style={{ paddingLeft: '28px' }}
+                  >
+                     <FileText className="h-3 w-3 flex-shrink-0" />
+                     <span className="truncate">{note.title || 'Untitled'}</span>
+                  </button>
+               ))}
+            </div>
+         </div>
 
          {categories?.map((category) => (
             <CategoryNode
