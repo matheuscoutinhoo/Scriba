@@ -7,7 +7,7 @@ export class NoteController {
 
    getAll = (req: Request, res: Response): void => {
       const userId = req.params.userId || DEFAULT_USER_ID;
-      const archived = req.query.archived === 'true';
+      const archived = req.query.archived === 'true' ? true : req.query.archived === 'false' ? false : undefined;
       const categoryId = req.query.category_id as string | undefined;
 
       const notes = this.service.getAll(userId, { archived, categoryId });

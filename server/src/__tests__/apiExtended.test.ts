@@ -267,7 +267,7 @@ describe('Notes API - Tags and Categories', () => {
       const archived = await request(app).get('/api/notes?archived=true');
       expect(archived.body.data).toHaveLength(1);
 
-      const active = await request(app).get('/api/notes');
+      const active = await request(app).get('/api/notes?archived=false');
       expect(active.body.data).toHaveLength(0);
    });
 });

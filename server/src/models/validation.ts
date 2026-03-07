@@ -5,16 +5,21 @@ export const createNoteSchema = z.object({
    title: z.string().min(1, 'Title is required').max(255),
    content: z.string().optional().default(''),
    category_id: z.string().uuid().optional(),
-   tags: z.array(z.string().min(1).max(50)).optional().default([]),
+   tags: z.array(z.string().min(1).max(50)).max(20).optional().default([]),
 });
 
 export const updateNoteSchema = z.object({
    title: z.string().min(1).max(255).optional(),
-   content: z.string().optional(),
+   content: z.string().max(500_000).optional(),
    category_id: z.string().uuid().nullable().optional(),
    is_pinned: z.boolean().optional(),
    is_archived: z.boolean().optional(),
-   tags: z.array(z.string().min(1).max(50)).optional(),
+   tags: z.array(z.string().min(1).max(50)).max(20).optional(),
+});
+
+export const notesQuerySchema = z.object({
+   archived: z.enum(['true', 'false']).optional(),
+   category_id: z.string().uuid().optional(),
 });
 
 export const createCategorySchema = z.object({
@@ -33,7 +38,7 @@ export const updateCategorySchema = z.object({
 });
 
 export const searchSchema = z.object({
-   q: z.string().min(1, 'Search query is required'),
+   q: z.string().min(1, 'Search query is required').max(200),
    limit: z.coerce.number().int().min(1).max(100).optional().default(20),
    offset: z.coerce.number().int().min(0).optional().default(0),
 });

@@ -5,6 +5,7 @@ import {
    createCategorySchema,
    updateCategorySchema,
    searchSchema,
+   notesQuerySchema,
 } from '../models/validation';
 
 describe('createNoteSchema', () => {
@@ -158,5 +159,58 @@ describe('searchSchema', () => {
 
    it('rejects negative offset', () => {
       expect(() => searchSchema.parse({ q: 'test', offset: '-1' })).toThrow();
+   });
+
+   it('rejects query exceeding 200 chars', () => {
+      expect(() => searchSchema.parse({ q: 'a'.repeat(201) })).toThrow();
+   });
+});
+
+describe('notesQuerySchema', () => {
+   it('accepts empty query', () => {
+      const result = notesQuerySchema.parse({});
+      expect(result.archived).toBeUndefined();
+      expect(result.category_id).toBeUndefined();
+   });
+
+   it('accepts archived=true', () => {
+      const result = notesQuerySchema.parse({ archived: 'true' });
+      expect(result.archived).toBe('true');
+   });
+
+   it('accepts archived=false', () => {
+      const result = notesQuerySchema.parse({ archived: 'false' });
+      expect(result.archived).toBe('false');
+   });
+
+   it('rejects invalid archived value', () => {
+      expect(() => notesQuerySchema.parse({ archived: 'yes' })).toThrow();
+   });
+
+   it('accepts valid category_id UUID', () => {
+      const result = notesQuerySchema.parse({ category_id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11' });
+      expect(result.category_id).toBeDefined();
+   });
+
+   it('rejects invalid category_id', () => {
+      expect(() => notesQuerySchema.parse({ category_id: 'not-a-uuid' })).toThrow();
+   });
+});
+
+describe('security limits', () => {
+   it('rejects more than 20 tags', () => {
+      const tags = Array.from({ length: 21 }, (_, i) => `tag${i}`);
+      expect(() => createNoteSchema.parse({ title: 'Note', tags })).toThrow();
+   });
+
+   it('rejects content exceeding 500KB', () => {
+      const content = 'x'.repeat(500_001);
+      expect(() => updateNoteSchema.parse({ content })).toThrow();
+   });
+
+   it('accepts content up to 500KB', () => {
+      const content = 'x'.repeat(500_000);
+      const result = updateNoteSchema.parse({ content });
+      expect(result.content).toHaveLength(500_000);
    });
 });

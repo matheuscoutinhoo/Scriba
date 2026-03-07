@@ -1,6 +1,13 @@
 import type { Request, Response, NextFunction } from 'express';
 import { type ZodSchema, ZodError } from 'zod';
 
+function sanitizeZodErrors(errors: ZodError['errors']): { field: string; message: string }[] {
+   return errors.map(e => ({
+      field: e.path.join('.'),
+      message: e.message,
+   }));
+}
+
 export function validateBody(schema: ZodSchema) {
    return (req: Request, res: Response, next: NextFunction): void => {
       try {
@@ -8,7 +15,7 @@ export function validateBody(schema: ZodSchema) {
          next();
       } catch (error) {
          if (error instanceof ZodError) {
-            res.status(400).json({ error: 'Validation failed', details: error.errors });
+            res.status(400).json({ error: 'Validation failed', details: sanitizeZodErrors(error.errors) });
             return;
          }
          next(error);
@@ -24,7 +31,7 @@ export function validateQuery(schema: ZodSchema) {
          next();
       } catch (error) {
          if (error instanceof ZodError) {
-            res.status(400).json({ error: 'Validation failed', details: error.errors });
+            res.status(400).json({ error: 'Validation failed', details: sanitizeZodErrors(error.errors) });
             return;
          }
          next(error);
