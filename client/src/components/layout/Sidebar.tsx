@@ -52,7 +52,7 @@ export function Sidebar({
    };
 
    return (
-      <aside className="w-80 h-screen flex flex-col border-r border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
+      <aside className="w-80 h-screen flex flex-col bg-[var(--color-bg-secondary)]">
          {/* Logo */}
          <div className="p-4 border-b border-[var(--color-border)] flex items-center justify-between">
             <div>

@@ -77,37 +77,44 @@ function ScribaApp() {
 
   return (
     <div className="flex h-screen overflow-hidden">
-      {sidebarCollapsed ? (
-        <div className="h-screen flex flex-col items-center py-3 px-1.5 border-r border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
-          <button
-            onClick={() => setSidebarCollapsed(false)}
-            className="p-1.5 rounded-md hover:bg-[var(--color-bg-hover)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
-            title="Show sidebar"
-          >
-            <PanelLeft className="h-4 w-4" />
-          </button>
-        </div>
-      ) : (
-        <Sidebar
-          selectedCategoryId={selectedCategoryId}
-          searchQuery={searchQuery}
-          notes={displayedNotes}
-          selectedNoteId={selectedNoteId}
-          onSelectCategory={(id) => {
-            setSelectedCategoryId(id);
-            setSearchQuery('');
-          }}
-          onSearch={setSearchQuery}
-          onNewNote={handleNewNote}
-          onNewCategory={() => setShowCategoryDialog(true)}
-          onSelectNote={setSelectedNoteId}
-          onMoveNoteToCategory={handleMoveNoteToCategory}
-          onTogglePin={handleTogglePin}
-          onToggleArchive={handleToggleArchive}
-          onDeleteNote={handleDeleteNote}
-          onCollapse={() => setSidebarCollapsed(true)}
-        />
-      )}
+      <div
+        className="h-screen flex-shrink-0 transition-[width] duration-300 ease-in-out overflow-hidden border-r border-[var(--color-border)] bg-[var(--color-bg-secondary)]"
+        style={{ width: sidebarCollapsed ? '40px' : '320px' }}
+      >
+        {sidebarCollapsed ? (
+          <div className="h-full flex flex-col items-center py-3 px-1 animate-[fadeIn_200ms_ease-out]">
+            <button
+              onClick={() => setSidebarCollapsed(false)}
+              className="p-1.5 rounded-md hover:bg-[var(--color-bg-hover)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
+              title="Show sidebar"
+            >
+              <PanelLeft className="h-4 w-4" />
+            </button>
+          </div>
+        ) : (
+          <div className="w-80 h-full animate-[fadeIn_150ms_ease-out_100ms_both]">
+            <Sidebar
+              selectedCategoryId={selectedCategoryId}
+              searchQuery={searchQuery}
+              notes={displayedNotes}
+              selectedNoteId={selectedNoteId}
+              onSelectCategory={(id) => {
+                setSelectedCategoryId(id);
+                setSearchQuery('');
+              }}
+              onSearch={setSearchQuery}
+              onNewNote={handleNewNote}
+              onNewCategory={() => setShowCategoryDialog(true)}
+              onSelectNote={setSelectedNoteId}
+              onMoveNoteToCategory={handleMoveNoteToCategory}
+              onTogglePin={handleTogglePin}
+              onToggleArchive={handleToggleArchive}
+              onDeleteNote={handleDeleteNote}
+              onCollapse={() => setSidebarCollapsed(true)}
+            />
+          </div>
+        )}
+      </div>
 
       {/* Editor */}
       <div className="flex-1 bg-[var(--color-bg-primary)] overflow-hidden">
