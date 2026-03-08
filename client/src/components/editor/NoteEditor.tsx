@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeSanitize from 'rehype-sanitize';
@@ -198,8 +198,28 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
       }
    };
 
+   const headings = useMemo(() => {
+      return lines
+         .map((line, index) => {
+            const match = line.match(/^(#{1,6})\s+(.+)/);
+            if (!match) return null;
+            return { level: match[1].length, text: match[2].replace(/[*_`~\[\]]/g, ''), lineIndex: index };
+         })
+         .filter((h): h is { level: number; text: string; lineIndex: number } => h !== null);
+   }, [lines]);
+
+   const lineRefs = useRef<Map<number, HTMLElement>>(new Map());
+
+   const scrollToHeading = (lineIndex: number) => {
+      const el = lineRefs.current.get(lineIndex);
+      if (el) {
+         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      setEditingLineIndex(lineIndex);
+   };
+
    return (
-      <div className="flex flex-col h-full" onKeyDown={(e) => {
+      <div className="group/editor flex flex-col h-full" onKeyDown={(e) => {
          if (e.ctrlKey && e.key === 's') {
             e.preventDefault();
             handleSave();
@@ -255,21 +275,24 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
             />
          </div>
 
-         {/* Content - Line-by-line live preview editor */}
-         <div
-            className="flex-1 overflow-y-auto px-8 py-4 max-w-3xl mx-auto w-full"
-            onMouseDown={(e) => {
-               if (e.target === e.currentTarget) {
-                  e.preventDefault();
-                  if (selectAll) {
-                     setSelectAll(false);
-                     setEditingLineIndex(null);
-                  } else {
-                     setEditingLineIndex(lines.length - 1);
+         {/* Content area with TOC */}
+         <div className="flex-1 flex overflow-hidden relative">
+            {/* Content - Line-by-line live preview editor */}
+            <div
+               className="flex-1 overflow-y-auto px-8 py-4"
+               onMouseDown={(e) => {
+                  if (e.target === e.currentTarget) {
+                     e.preventDefault();
+                     if (selectAll) {
+                        setSelectAll(false);
+                        setEditingLineIndex(null);
+                     } else {
+                        setEditingLineIndex(lines.length - 1);
+                     }
                   }
-               }
-            }}
-         >
+               }}
+            >
+               <div className="max-w-3xl mx-auto w-full">
             {selectAll ? (
                <textarea
                   ref={selectAllRef}
@@ -319,6 +342,10 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
                   ) : (
                      <div
                         key={index}
+                        ref={(el) => {
+                           if (el) lineRefs.current.set(index, el);
+                           else lineRefs.current.delete(index);
+                        }}
                         onMouseDown={(e) => {
                            e.preventDefault();
                            setEditingLineIndex(index);
@@ -340,6 +367,30 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
                      </div>
                   )
                )
+            )}
+               </div>
+            </div>
+
+            {/* Table of Contents - right side */}
+            {headings.length > 0 && (
+               <div className="w-52 flex-shrink-0 overflow-y-auto py-4 pr-3 pl-2 border-l border-[var(--color-border)] opacity-0 group-hover/editor:opacity-100 transition-opacity duration-300">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] block mb-2">
+                     On this page
+                  </span>
+                  <nav className="flex flex-col gap-0.5">
+                     {headings.map((h, i) => (
+                        <button
+                           key={`${h.lineIndex}-${i}`}
+                           onClick={() => scrollToHeading(h.lineIndex)}
+                           className="text-left text-[11px] py-0.5 text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors truncate cursor-pointer"
+                           style={{ paddingLeft: `${(h.level - 1) * 10}px` }}
+                           title={h.text}
+                        >
+                           {h.text}
+                        </button>
+                     ))}
+                  </nav>
+               </div>
             )}
          </div>
       </div>

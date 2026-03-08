@@ -40,6 +40,23 @@
     box-sizing: border-box;
     margin: 0;
     padding: 0;
+    cursor: default;
+  }
+
+  input,
+  textarea,
+  [contenteditable="true"],
+  .cursor-text {
+    cursor: text;
+  }
+
+  a,
+  button,
+  [role="button"],
+  select,
+  label[for],
+  .cursor-pointer {
+    cursor: pointer;
   }
 
   html {
