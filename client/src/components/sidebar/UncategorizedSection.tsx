@@ -73,7 +73,7 @@ export function UncategorizedSection({ selectedNoteId, onSelectNote, onTogglePin
          </button>
 
          <div
-            className="overflow-hidden transition-all duration-300 ease-in-out"
+            className="overflow-hidden transition-all duration-150 ease-in-out"
             style={{ maxHeight: expanded ? `${contentHeight}px` : '0px', opacity: expanded ? 1 : 0 }}
          >
             <div ref={contentRef}>

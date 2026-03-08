@@ -26,6 +26,7 @@ export interface CategoryNodeProps {
 
 export function CategoryNode({ category, selectedId, onSelect, onDropNote, onDropCategory, onCreateSubcategory, selectedNoteId, onSelectNote, onTogglePin, onToggleArchive, onDeleteNote, depth, onDragCategorizedNote }: CategoryNodeProps) {
    const [expanded, setExpanded] = useState(false);
+   const [wasExpanded, setWasExpanded] = useState(false);
    const [isDragOver, setIsDragOver] = useState(false);
    const contentRef = useRef<HTMLDivElement>(null);
    const [contentHeight, setContentHeight] = useState(0);
@@ -41,16 +42,22 @@ export function CategoryNode({ category, selectedId, onSelect, onDropNote, onDro
    const isSelected = selectedId === category.id;
    const hasContent = hasChildren || category.note_count > 0;
 
+   if (expanded && !wasExpanded) setWasExpanded(true);
+
    const { data: categoryNotes } = useNotes(
       { category_id: category.id },
-      { enabled: expanded }
+      { enabled: wasExpanded || expanded }
    );
 
    useEffect(() => {
-      if (contentRef.current) {
-         setContentHeight(contentRef.current.scrollHeight);
-      }
-   }, [expanded, categoryNotes, hasChildren]);
+      const el = contentRef.current;
+      if (!el) return;
+      const observer = new ResizeObserver(() => {
+         setContentHeight(el.scrollHeight);
+      });
+      observer.observe(el);
+      return () => observer.disconnect();
+   }, []);
 
    useEffect(() => {
       if (!ctxMenu) return;
@@ -223,7 +230,7 @@ export function CategoryNode({ category, selectedId, onSelect, onDropNote, onDro
          )}
 
          <div
-            className="overflow-hidden transition-all duration-300 ease-in-out"
+            className="overflow-hidden transition-all duration-150 ease-in-out"
             style={{ maxHeight: expanded ? `${contentHeight}px` : '0px', opacity: expanded ? 1 : 0 }}
          >
             <div ref={contentRef}>

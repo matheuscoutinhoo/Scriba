@@ -1,5 +1,5 @@
 import { createApp } from './app.js';
-import { getDatabase, initializeSchema, execute, queryOne } from './database/connection.js';
+import { getDatabase, initializeSchema, execute, queryOne, saveDatabase, closeDatabase } from './database/connection.js';
 import { DEFAULT_USER_ID } from './lib/constants.js';
 
 const PORT = process.env.PORT || 3001;
@@ -22,6 +22,14 @@ async function main() {
    app.listen(PORT, () => {
       console.log(`🖊️  Scriba server running on http://localhost:${PORT}`);
    });
+
+   const shutdown = () => {
+      saveDatabase();
+      closeDatabase();
+      process.exit(0);
+   };
+   process.on('SIGINT', shutdown);
+   process.on('SIGTERM', shutdown);
 }
 
 main().catch(console.error);

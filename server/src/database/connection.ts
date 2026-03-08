@@ -68,7 +68,9 @@ export function queryOne<T = Record<string, unknown>>(database: Database, sql: s
 /** Helper: run a mutating query (INSERT/UPDATE/DELETE) */
 export function execute(database: Database, sql: string, params: unknown[] = []): number {
    database.run(sql, params.map(p => p === undefined ? null : p) as (string | number | null | Uint8Array)[]);
-   return database.getRowsModified();
+   const changes = database.getRowsModified();
+   if (changes > 0) saveDatabase();
+   return changes;
 }
 
 export function initializeSchema(database: Database): void {

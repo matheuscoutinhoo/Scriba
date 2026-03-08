@@ -58,8 +58,13 @@ export function useUpdateNote() {
             }
          }
       },
-      onSettled: () => {
-         queryClient.invalidateQueries({ queryKey: ['notes'] });
+      onSettled: (_data, _error, variables) => {
+         if (variables.category_id !== undefined) {
+            // Note moved between categories — invalidate all category-specific queries
+            queryClient.invalidateQueries({ queryKey: ['notes'] });
+         } else {
+            queryClient.invalidateQueries({ queryKey: ['notes', undefined] });
+         }
          queryClient.invalidateQueries({ queryKey: ['categories'] });
       },
    });
