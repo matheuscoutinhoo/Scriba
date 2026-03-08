@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { CATEGORY_COLORS } from '@/lib/constants';
 
 interface CreateCategoryDialogProps {
    isOpen: boolean;
@@ -11,20 +12,15 @@ interface CreateCategoryDialogProps {
    parentName?: string;
 }
 
-const COLORS = [
-   '#e11d48', '#f97316', '#eab308', '#22c55e',
-   '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899',
-];
-
 export function CreateCategoryDialog({ isOpen, onClose, onCreate, parentId, parentName }: CreateCategoryDialogProps) {
    const [name, setName] = useState('');
-   const [color, setColor] = useState(COLORS[0]);
+   const [color, setColor] = useState(CATEGORY_COLORS[0]);
 
    // Reset form state when dialog opens
    useEffect(() => {
       if (isOpen) {
          setName('');
-         setColor(COLORS[0]);
+         setColor(CATEGORY_COLORS[0]);
       }
    }, [isOpen]);
 
@@ -35,7 +31,7 @@ export function CreateCategoryDialog({ isOpen, onClose, onCreate, parentId, pare
       if (name.trim()) {
          onCreate(name.trim(), color, parentId);
          setName('');
-         setColor(COLORS[0]);
+         setColor(CATEGORY_COLORS[0]);
          onClose();
       }
    };
@@ -77,7 +73,7 @@ export function CreateCategoryDialog({ isOpen, onClose, onCreate, parentId, pare
                         Color
                      </label>
                      <div className="flex gap-2">
-                        {COLORS.map((c) => (
+                        {CATEGORY_COLORS.map((c) => (
                            <button
                               key={c}
                               type="button"

@@ -1,22 +1,19 @@
 import type { Request, Response } from 'express';
-import type { NoteRepository } from '../repositories/NoteRepository.js';
-import { DEFAULT_USER_ID } from '../lib/constants.js';
+import type { INoteRepository } from '../repositories/interfaces.js';
 
 export class NoteController {
-   constructor(private repository: NoteRepository) { }
+   constructor(private repository: INoteRepository) { }
 
    getAll = (req: Request, res: Response): void => {
-      const userId = req.params.userId || DEFAULT_USER_ID;
       const archived = req.query.archived === 'true' ? true : req.query.archived === 'false' ? false : undefined;
       const categoryId = req.query.category_id as string | undefined;
 
-      const notes = this.repository.findAllByUser(userId, { archived, categoryId });
+      const notes = this.repository.findAllByUser(req.userId, { archived, categoryId });
       res.json({ data: notes });
    };
 
-   getById = (req: Request, res: Response): void => {
-      const userId = req.params.userId || DEFAULT_USER_ID;
-      const note = this.repository.findById(req.params.id, userId);
+   getById = (req: Request<{ id: string }>, res: Response): void => {
+      const note = this.repository.findById(req.params.id, req.userId);
 
       if (!note) {
          res.status(404).json({ error: 'Note not found' });
@@ -27,14 +24,12 @@ export class NoteController {
    };
 
    create = (req: Request, res: Response): void => {
-      const userId = req.params.userId || DEFAULT_USER_ID;
-      const note = this.repository.create(req.body, userId);
+      const note = this.repository.create(req.body, req.userId);
       res.status(201).json({ data: note });
    };
 
-   update = (req: Request, res: Response): void => {
-      const userId = req.params.userId || DEFAULT_USER_ID;
-      const note = this.repository.update(req.params.id, req.body, userId);
+   update = (req: Request<{ id: string }>, res: Response): void => {
+      const note = this.repository.update(req.params.id, req.body, req.userId);
 
       if (!note) {
          res.status(404).json({ error: 'Note not found' });
@@ -44,9 +39,8 @@ export class NoteController {
       res.json({ data: note });
    };
 
-   delete = (req: Request, res: Response): void => {
-      const userId = req.params.userId || DEFAULT_USER_ID;
-      const deleted = this.repository.delete(req.params.id, userId);
+   delete = (req: Request<{ id: string }>, res: Response): void => {
+      const deleted = this.repository.delete(req.params.id, req.userId);
 
       if (!deleted) {
          res.status(404).json({ error: 'Note not found' });
@@ -57,9 +51,8 @@ export class NoteController {
    };
 
    search = (req: Request, res: Response): void => {
-      const userId = req.params.userId || DEFAULT_USER_ID;
       const { q, limit, offset } = req.query as unknown as { q: string; limit: number; offset: number };
-      const result = this.repository.search(userId, q, limit, offset);
+      const result = this.repository.search(req.userId, q, limit, offset);
       res.json({ data: result.notes, total: result.total });
    };
 }

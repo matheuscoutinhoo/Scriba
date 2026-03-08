@@ -1,19 +1,16 @@
 import type { Request, Response } from 'express';
-import type { CategoryRepository } from '../repositories/CategoryRepository.js';
-import { DEFAULT_USER_ID } from '../lib/constants.js';
+import type { ICategoryRepository } from '../repositories/interfaces.js';
 
 export class CategoryController {
-   constructor(private repository: CategoryRepository) { }
+   constructor(private repository: ICategoryRepository) { }
 
    getAll = (req: Request, res: Response): void => {
-      const userId = req.params.userId || DEFAULT_USER_ID;
-      const categories = this.repository.findAllByUser(userId);
+      const categories = this.repository.findAllByUser(req.userId);
       res.json({ data: categories });
    };
 
-   getById = (req: Request, res: Response): void => {
-      const userId = req.params.userId || DEFAULT_USER_ID;
-      const category = this.repository.findById(req.params.id, userId);
+   getById = (req: Request<{ id: string }>, res: Response): void => {
+      const category = this.repository.findById(req.params.id, req.userId);
 
       if (!category) {
          res.status(404).json({ error: 'Category not found' });
@@ -24,14 +21,12 @@ export class CategoryController {
    };
 
    create = (req: Request, res: Response): void => {
-      const userId = req.params.userId || DEFAULT_USER_ID;
-      const category = this.repository.create(req.body, userId);
+      const category = this.repository.create(req.body, req.userId);
       res.status(201).json({ data: category });
    };
 
-   update = (req: Request, res: Response): void => {
-      const userId = req.params.userId || DEFAULT_USER_ID;
-      const category = this.repository.update(req.params.id, req.body, userId);
+   update = (req: Request<{ id: string }>, res: Response): void => {
+      const category = this.repository.update(req.params.id, req.body, req.userId);
 
       if (!category) {
          res.status(404).json({ error: 'Category not found' });
@@ -41,9 +36,8 @@ export class CategoryController {
       res.json({ data: category });
    };
 
-   delete = (req: Request, res: Response): void => {
-      const userId = req.params.userId || DEFAULT_USER_ID;
-      const deleted = this.repository.delete(req.params.id, userId);
+   delete = (req: Request<{ id: string }>, res: Response): void => {
+      const deleted = this.repository.delete(req.params.id, req.userId);
 
       if (!deleted) {
          res.status(404).json({ error: 'Category not found' });

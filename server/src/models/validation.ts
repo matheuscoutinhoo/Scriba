@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { DEFAULT_CATEGORY_COLOR } from '../lib/constants.js';
+import { DEFAULT_CATEGORY_COLOR, DEFAULT_SEARCH_LIMIT } from '../lib/constants.js';
 
 export const createNoteSchema = z.object({
    title: z.string().min(1, 'Title is required').max(255),
@@ -39,6 +39,6 @@ export const updateCategorySchema = z.object({
 
 export const searchSchema = z.object({
    q: z.string().min(1, 'Search query is required').max(200),
-   limit: z.coerce.number().int().min(1).max(100).optional().default(20),
+   limit: z.coerce.number().int().min(1).max(100).optional().default(DEFAULT_SEARCH_LIMIT),
    offset: z.coerce.number().int().min(0).optional().default(0),
 });

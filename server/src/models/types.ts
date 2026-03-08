@@ -1,13 +1,3 @@
-export interface User {
-   id: string;
-   username: string;
-   email: string;
-   password_hash: string;
-   display_name: string | null;
-   created_at: string;
-   updated_at: string;
-}
-
 export interface Category {
    id: string;
    name: string;
@@ -41,11 +31,6 @@ export interface Tag {
    slug: string;
    user_id: string;
    created_at: string;
-}
-
-export interface NoteTag {
-   note_id: string;
-   tag_id: string;
 }
 
 // API DTOs
@@ -89,9 +74,4 @@ export interface NoteWithTags extends Note {
 export interface CategoryWithCount extends Category {
    note_count: number;
    children?: CategoryWithCount[];
-}
-
-export interface SearchResult {
-   notes: NoteWithTags[];
-   total: number;
 }

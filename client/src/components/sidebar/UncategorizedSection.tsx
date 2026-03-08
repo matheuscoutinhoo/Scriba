@@ -1,9 +1,9 @@
-import { ChevronRight, ChevronDown, FileText, Clock, Inbox } from 'lucide-react';
+import { ChevronRight, ChevronDown, Inbox } from 'lucide-react';
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useNotes } from '@/hooks/useNotes';
 import { cn } from '@/lib/utils';
 import type { Note } from '@/lib/types';
-import { NoteActionButtons } from './NoteActionButtons';
+import { NoteListItem } from './NoteListItem';
 
 interface UncategorizedSectionProps {
    selectedNoteId?: string | null;
@@ -77,51 +77,18 @@ export function UncategorizedSection({ selectedNoteId, onSelectNote, onTogglePin
             style={{ maxHeight: expanded ? `${contentHeight}px` : '0px', opacity: expanded ? 1 : 0 }}
          >
             <div ref={contentRef}>
-               {uncategorizedNotes.map((note) => {
-                  const formattedDate = new Date(note.created_at).toLocaleDateString('pt-BR', {
-                     day: '2-digit',
-                     month: 'short',
-                  });
-                  return (
-                     <div
-                        key={note.id}
-                        className="group relative"
-                     >
-                        <div
-                           onClick={() => onSelectNote?.(note.id)}
-                           draggable
-                           onDragStart={(e) => {
-                              e.dataTransfer.setData('text/x-note-id', note.id);
-                              e.dataTransfer.effectAllowed = 'move';
-                           }}
-                           className={cn(
-                              'w-full text-left py-1.5 transition-colors cursor-pointer',
-                              selectedNoteId === note.id
-                                 ? 'border-l-2 border-l-[var(--color-accent)] text-[var(--color-text-primary)]'
-                                 : 'text-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-secondary)]'
-                           )}
-                           style={{ paddingLeft: '28px', paddingRight: '8px', ...(selectedNoteId === note.id ? { background: 'linear-gradient(to right, var(--color-accent-soft) 0%, transparent 30%)' } : {}) }}
-                        >
-                           <div className="flex items-center gap-1.5">
-                              <FileText className="h-3 w-3 flex-shrink-0" />
-                              <span className="truncate text-[0.9rem]">{note.title || 'Untitled'}</span>
-                           </div>
-                           {note.excerpt && (
-                              <p className="text-[10px] text-[var(--color-text-muted)] mt-0.5 line-clamp-1" style={{ paddingLeft: '18px' }}>
-                                 {note.excerpt}
-                              </p>
-                           )}
-                           <div className="flex items-center justify-end mt-0.5" style={{ paddingLeft: '18px' }}>
-                              <span className="text-[9px] text-[var(--color-text-muted)] flex items-center gap-1">
-                                 <Clock className="h-2.5 w-2.5" />
-                                 {formattedDate}
-                              </span>
-                           </div>
-                        </div>
-                        <NoteActionButtons note={note} onTogglePin={onTogglePin} onToggleArchive={onToggleArchive} onDeleteNote={onDeleteNote} right="8px" top="6px" />
-                     </div>
-                  );
-               })}
+               {uncategorizedNotes.map((note) => (
+                  <NoteListItem
+                     key={note.id}
+                     note={note}
+                     isSelected={selectedNoteId === note.id}
+                     paddingLeft={28}
+                     onSelect={onSelectNote}
+                     onTogglePin={onTogglePin}
+                     onToggleArchive={onToggleArchive}
+                     onDeleteNote={onDeleteNote}
+                  />
+               ))}
             </div>
          </div>
       </div>

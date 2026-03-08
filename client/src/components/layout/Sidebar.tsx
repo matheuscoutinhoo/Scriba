@@ -1,10 +1,12 @@
-import { useState, useMemo, useEffect } from 'react';
-import { Search, Plus, FolderPlus, Pin, PinOff, Archive, Trash2, Clock, FolderOpen, FileText, PanelLeftClose, Tag, X, Sun, Moon } from 'lucide-react';
+import { useState, useMemo, useEffect, memo } from 'react';
+import { Search, Plus, FolderPlus, Pin, PinOff, Archive, Trash2, Clock, FolderOpen, FileText, PanelLeftClose, Tag, X } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { ThemeToggleButton } from '@/components/ui/ThemeToggleButton';
 import { CategoryTree } from '@/components/sidebar/CategoryTree';
 import { cn } from '@/lib/utils';
+import { LOCALE } from '@/lib/constants';
 import type { Note } from '@/lib/types';
 
 type SidebarTab = 'categories' | 'notes';
@@ -94,13 +96,7 @@ export function Sidebar({
                <p className="text-xs text-[var(--color-text-muted)] mt-0.5">Smart Notes</p>
             </div>
             <div className="flex items-center gap-1">
-               <button
-                  onClick={onToggleTheme}
-                  className="p-1.5 rounded-md hover:bg-[var(--color-bg-hover)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
-                  title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
-               >
-                  {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-               </button>
+               <ThemeToggleButton theme={theme} onToggle={onToggleTheme} />
                <button
                   onClick={onCollapse}
                   className="p-1.5 rounded-md hover:bg-[var(--color-bg-hover)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
@@ -268,8 +264,8 @@ interface SidebarNoteCardProps {
    onDelete?: () => void;
 }
 
-export function SidebarNoteCard({ note, isSelected, onClick, onTogglePin, onToggleArchive, onDelete }: SidebarNoteCardProps) {
-   const formattedDate = new Date(note.updated_at).toLocaleDateString('pt-BR', {
+export const SidebarNoteCard = memo(function SidebarNoteCard({ note, isSelected, onClick, onTogglePin, onToggleArchive, onDelete }: SidebarNoteCardProps) {
+   const formattedDate = new Date(note.updated_at).toLocaleDateString(LOCALE, {
       day: '2-digit',
       month: 'short',
    });
@@ -363,4 +359,4 @@ export function SidebarNoteCard({ note, isSelected, onClick, onTogglePin, onTogg
          </div>
       </div>
    );
-}
+});

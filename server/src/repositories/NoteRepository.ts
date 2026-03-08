@@ -1,11 +1,12 @@
 import { v4 as uuidv4 } from 'uuid';
 import type { Database } from '../database/connection.js';
-import { queryAll, queryOne, execute } from '../database/connection.js';
+import { queryAll, queryOne, execute, batch } from '../database/connection.js';
 import type { Note, NoteWithTags, Tag, CreateNoteDTO, UpdateNoteDTO } from '../models/types.js';
+import type { INoteRepository } from './interfaces.js';
 import { slugify, escapeLikePattern } from '../lib/utils.js';
 import { MAX_EXCERPT_LENGTH, DEFAULT_SEARCH_LIMIT } from '../lib/constants.js';
 
-export class NoteRepository {
+export class NoteRepository implements INoteRepository {
    constructor(private db: Database) { }
 
    findAllByUser(userId: string, options?: { archived?: boolean; categoryId?: string }): NoteWithTags[] {
@@ -35,71 +36,74 @@ export class NoteRepository {
    }
 
    create(dto: CreateNoteDTO, userId: string): NoteWithTags {
-      const id = uuidv4();
-      const excerpt = this.generateExcerpt(dto.content || '');
+      return batch(() => {
+         const id = uuidv4();
+         const excerpt = this.generateExcerpt(dto.content || '');
 
-      execute(this.db,
-         `INSERT INTO notes (id, title, content, excerpt, user_id, category_id) VALUES (?, ?, ?, ?, ?, ?)`,
-         [id, dto.title, dto.content || '', excerpt, userId, dto.category_id || null]
-      );
+         execute(this.db,
+            `INSERT INTO notes (id, title, content, excerpt, user_id, category_id) VALUES (?, ?, ?, ?, ?, ?)`,
+            [id, dto.title, dto.content || '', excerpt, userId, dto.category_id || null]
+         );
 
-      if (dto.tags && dto.tags.length > 0) {
-         this.syncTags(id, dto.tags, userId);
-      }
+         if (dto.tags && dto.tags.length > 0) {
+            this.syncTags(id, dto.tags, userId);
+         }
 
-      const result = this.findById(id, userId);
-      if (!result) throw new Error(`Failed to create note with id ${id}`);
-      return result;
+         const result = this.findById(id, userId);
+         if (!result) throw new Error(`Failed to create note with id ${id}`);
+         return result;
+      });
    }
 
    update(id: string, dto: UpdateNoteDTO, userId: string): NoteWithTags | null {
       const existing = this.findById(id, userId);
       if (!existing) return null;
 
-      const fields: string[] = [];
-      const values: unknown[] = [];
+      return batch(() => {
+         const fields: string[] = [];
+         const values: unknown[] = [];
 
-      if (dto.title !== undefined) {
-         fields.push('title = ?');
-         values.push(dto.title);
-      }
-      if (dto.content !== undefined) {
-         fields.push('content = ?');
-         values.push(dto.content);
-         fields.push('excerpt = ?');
-         values.push(this.generateExcerpt(dto.content));
-      }
-      if (dto.category_id !== undefined) {
-         fields.push('category_id = ?');
-         values.push(dto.category_id);
-      }
-      if (dto.is_pinned !== undefined) {
-         fields.push('is_pinned = ?');
-         values.push(dto.is_pinned ? 1 : 0);
-      }
-      if (dto.is_archived !== undefined) {
-         fields.push('is_archived = ?');
-         values.push(dto.is_archived ? 1 : 0);
-      }
+         if (dto.title !== undefined) {
+            fields.push('title = ?');
+            values.push(dto.title);
+         }
+         if (dto.content !== undefined) {
+            fields.push('content = ?');
+            values.push(dto.content);
+            fields.push('excerpt = ?');
+            values.push(this.generateExcerpt(dto.content));
+         }
+         if (dto.category_id !== undefined) {
+            fields.push('category_id = ?');
+            values.push(dto.category_id);
+         }
+         if (dto.is_pinned !== undefined) {
+            fields.push('is_pinned = ?');
+            values.push(dto.is_pinned ? 1 : 0);
+         }
+         if (dto.is_archived !== undefined) {
+            fields.push('is_archived = ?');
+            values.push(dto.is_archived ? 1 : 0);
+         }
 
-      if (fields.length > 0) {
-         fields.push("updated_at = datetime('now')");
-         values.push(id, userId);
-         execute(this.db,
-            `UPDATE notes SET ${fields.join(', ')} WHERE id = ? AND user_id = ?`,
-            values
-         );
-      }
+         if (fields.length > 0) {
+            fields.push("updated_at = datetime('now')");
+            values.push(id, userId);
+            execute(this.db,
+               `UPDATE notes SET ${fields.join(', ')} WHERE id = ? AND user_id = ?`,
+               values
+            );
+         }
 
-      if (dto.tags !== undefined) {
-         this.syncTags(id, dto.tags, userId);
-      }
+         if (dto.tags !== undefined) {
+            this.syncTags(id, dto.tags, userId);
+         }
 
-      return this.findById(id, userId);
+         return this.findById(id, userId);
+      });
    }
 
    delete(id: string, userId: string): boolean {
-      execute(this.db, `DELETE FROM note_tags WHERE note_id = ?`, [id]);
       const changes = execute(this.db, `DELETE FROM notes WHERE id = ? AND user_id = ?`, [id, userId]);
       return changes > 0;
    }

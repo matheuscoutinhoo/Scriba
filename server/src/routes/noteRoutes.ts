@@ -1,20 +1,16 @@
 import { Router } from 'express';
-import type { Database } from '../database/connection.js';
-import { NoteController } from '../controllers/NoteController.js';
-import { NoteRepository } from '../repositories/NoteRepository.js';
-import { validateBody, validateQuery } from '../middleware/validation.js';
+import type { NoteController } from '../controllers/NoteController.js';
+import { validate } from '../middleware/validation.js';
 import { createNoteSchema, updateNoteSchema, searchSchema, notesQuerySchema } from '../models/validation.js';
 
-export function createNoteRoutes(db: Database): Router {
+export function createNoteRoutes(controller: NoteController): Router {
    const router = Router();
-   const repository = new NoteRepository(db);
-   const controller = new NoteController(repository);
 
-   router.get('/search', validateQuery(searchSchema), controller.search);
-   router.get('/', validateQuery(notesQuerySchema), controller.getAll);
+   router.get('/search', validate(searchSchema, 'query'), controller.search);
+   router.get('/', validate(notesQuerySchema, 'query'), controller.getAll);
    router.get('/:id', controller.getById);
-   router.post('/', validateBody(createNoteSchema), controller.create);
-   router.put('/:id', validateBody(updateNoteSchema), controller.update);
+   router.post('/', validate(createNoteSchema, 'body'), controller.create);
+   router.put('/:id', validate(updateNoteSchema, 'body'), controller.update);
    router.delete('/:id', controller.delete);
 
    return router;

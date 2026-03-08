@@ -1,12 +1,15 @@
 import { useState, useCallback } from 'react';
-import { PanelLeft, Sun, Moon } from 'lucide-react';
+import { PanelLeft } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { NoteEditor } from '@/components/editor/NoteEditor';
 import { CreateCategoryDialog } from '@/components/dialogs/CreateCategoryDialog';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
+import { ThemeToggleButton } from '@/components/ui/ThemeToggleButton';
 import { useNotes, useNote, useCreateNote, useUpdateNote, useDeleteNote, useSearchNotes } from '@/hooks/useNotes';
 import { useCreateCategory, useUpdateCategory } from '@/hooks/useCategories';
+import { SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from '@/lib/constants';
 import type { UpdateNotePayload } from '@/lib/types';
 
 const queryClient = new QueryClient({
@@ -89,7 +92,7 @@ function ScribaApp() {
     <div className="flex h-screen overflow-hidden">
       <div
         className="h-screen flex-shrink-0 transition-[width] duration-300 ease-in-out overflow-hidden border-r border-[var(--color-border)] bg-[var(--color-bg-secondary)]"
-        style={{ width: sidebarCollapsed ? '40px' : '320px' }}
+        style={{ width: sidebarCollapsed ? `${SIDEBAR_COLLAPSED_WIDTH}px` : `${SIDEBAR_WIDTH}px` }}
       >
         {sidebarCollapsed ? (
           <div className="h-full flex flex-col items-center py-3 px-1 gap-1 animate-[fadeIn_200ms_ease-out]">
@@ -100,13 +103,7 @@ function ScribaApp() {
             >
               <PanelLeft className="h-4 w-4" />
             </button>
-            <button
-              onClick={toggleTheme}
-              className="p-1.5 rounded-md hover:bg-[var(--color-bg-hover)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
-              title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
-            >
-              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </button>
+            <ThemeToggleButton theme={theme} onToggle={toggleTheme} />
           </div>
         ) : (
           <div className="w-80 h-full animate-[fadeIn_150ms_ease-out_100ms_both]">
@@ -174,8 +171,10 @@ function ScribaApp() {
 
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ScribaApp />
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ScribaApp />
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }

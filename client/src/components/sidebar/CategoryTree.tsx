@@ -21,11 +21,10 @@ interface CategoryTreeProps {
 export function CategoryTree({ selectedId, onSelect, onDropNote, onDropCategory, onCreateSubcategory, selectedNoteId, onSelectNote, onTogglePin, onToggleArchive, onDeleteNote }: CategoryTreeProps) {
    const { data: categories, isLoading } = useCategories();
    const [isDraggingCategorized, setIsDraggingCategorized] = useState(false);
-   const [isDraggingSubcategory, setIsDraggingSubcategory] = useState(false);
    const [isDropHover, setIsDropHover] = useState(false);
 
    useEffect(() => {
-      const onDragEnd = () => { setIsDraggingCategorized(false); setIsDraggingSubcategory(false); setIsDropHover(false); };
+      const onDragEnd = () => { setIsDraggingCategorized(false); setIsDropHover(false); };
       window.addEventListener('dragend', onDragEnd);
       return () => window.removeEventListener('dragend', onDragEnd);
    }, []);

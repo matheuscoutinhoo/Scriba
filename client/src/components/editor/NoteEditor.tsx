@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/Badge';
 import { EditorToolbar } from './EditorToolbar';
 import { EditorContextMenu } from './EditorContextMenu';
 import { useAutoSave } from '@/hooks/useAutoSave';
+import { EDITOR_FONT_SIZE, EDITOR_LINE_HEIGHT, ZOOM_MIN, ZOOM_MAX, ZOOM_STEP } from '@/lib/constants';
 import type { Note, UpdateNotePayload } from '@/lib/types';
 
 interface NoteEditorProps {
@@ -30,7 +31,7 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
    const pendingCursorRef = useRef<number | null>(null);
 
    const { isDirty, save, scheduleAutoSave, resetDirty } = useAutoSave(note.id, onSave);
-   const lines = content.split('\n');
+   const lines = useMemo(() => content.split('\n'), [content]);
 
    useEffect(() => {
       if (selectAll && selectAllRef.current) {
@@ -339,7 +340,7 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
                               }
                            }}
                            className="w-full bg-transparent border-none outline-none text-[var(--color-text-primary)] leading-relaxed resize-none"
-                           style={{ fontFamily: 'var(--font-sans)', fontSize: '1.006rem', minHeight: `${lines.length * 1.925}em` }}
+                           style={{ fontFamily: 'var(--font-sans)', fontSize: EDITOR_FONT_SIZE, minHeight: `${lines.length * parseFloat(EDITOR_LINE_HEIGHT)}em` }}
                            spellCheck={false}
                            autoComplete="off"
                         />
@@ -350,7 +351,7 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
                               setEditingLineIndex(0);
                            }}
                            className="text-[var(--color-text-muted)] italic py-0.5"
-                           style={{ fontSize: '1.006rem' }}
+                           style={{ fontSize: EDITOR_FONT_SIZE }}
                         >
                            Click to start writing...
                         </div>
@@ -374,7 +375,7 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
                                     }
                                  }}
                                  className="w-full bg-transparent border-none outline-none text-[var(--color-text-primary)] py-0.5 block"
-                                 style={{ fontFamily: 'var(--font-sans)', fontSize: '1.006rem', lineHeight: '1.925' }}
+                                 style={{ fontFamily: 'var(--font-sans)', fontSize: EDITOR_FONT_SIZE, lineHeight: EDITOR_LINE_HEIGHT }}
                                  spellCheck={false}
                                  autoComplete="off"
                               />
@@ -414,7 +415,7 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
                <div className="absolute right-0 top-0 w-64 py-4 pr-3 pl-2">
                   <div className="flex items-center gap-1">
                      <button
-                        onClick={() => setFontScale(s => Math.max(50, s - 10))}
+                        onClick={() => setFontScale(s => Math.max(ZOOM_MIN, s - ZOOM_STEP))}
                         className="p-1 rounded hover:bg-[var(--color-bg-hover)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
                         title="Decrease font size"
                      >
@@ -422,7 +423,7 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
                      </button>
                      <span className="text-[12px] text-[var(--color-text-muted)] w-8 text-center tabular-nums">{fontScale}%</span>
                      <button
-                        onClick={() => setFontScale(s => Math.min(200, s + 10))}
+                        onClick={() => setFontScale(s => Math.min(ZOOM_MAX, s + ZOOM_STEP))}
                         className="p-1 rounded hover:bg-[var(--color-bg-hover)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
                         title="Increase font size"
                      >

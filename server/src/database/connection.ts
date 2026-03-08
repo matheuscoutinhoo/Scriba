@@ -25,14 +25,6 @@ export async function getDatabase(dbPath?: string): Promise<Database> {
    return db;
 }
 
-export async function createTestDatabase(): Promise<Database> {
-   const SQL = await initSqlJs();
-   const testDb = new SQL.Database();
-   testDb.run('PRAGMA foreign_keys = ON');
-   initializeSchema(testDb);
-   return testDb;
-}
-
 export function saveDatabase(dbPath?: string): void {
    if (!db) return;
    const resolvedPath = dbPath || path.resolve(process.cwd(), 'scriba.db');
@@ -61,15 +53,39 @@ export function queryAll<T = Record<string, unknown>>(database: Database, sql: s
 
 /** Helper: run a query and return the first row as object */
 export function queryOne<T = Record<string, unknown>>(database: Database, sql: string, params: unknown[] = []): T | null {
-   const results = queryAll<T>(database, sql, params);
-   return results[0] ?? null;
+   const stmt = database.prepare(sql);
+   stmt.bind(params.map(p => p === undefined ? null : p) as (string | number | null | Uint8Array)[]);
+   const result = stmt.step() ? (stmt.getAsObject() as T) : null;
+   stmt.free();
+   return result;
+}
+
+let batchDepth = 0;
+let batchDirty = false;
+
+/** Batch multiple execute() calls into a single saveDatabase() call */
+export function batch<T>(fn: () => T): T {
+   batchDepth++;
+   try {
+      const result = fn();
+      return result;
+   } finally {
+      batchDepth--;
+      if (batchDepth === 0 && batchDirty) {
+         batchDirty = false;
+         saveDatabase();
+      }
+   }
 }
 
 /** Helper: run a mutating query (INSERT/UPDATE/DELETE) */
 export function execute(database: Database, sql: string, params: unknown[] = []): number {
    database.run(sql, params.map(p => p === undefined ? null : p) as (string | number | null | Uint8Array)[]);
    const changes = database.getRowsModified();
-   if (changes > 0) saveDatabase();
+   if (changes > 0) {
+      if (batchDepth > 0) batchDirty = true;
+      else saveDatabase();
+   }
    return changes;
 }
 
