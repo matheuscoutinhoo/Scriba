@@ -74,7 +74,27 @@ export function useDeleteNote() {
    const queryClient = useQueryClient();
    return useMutation({
       mutationFn: (id: string) => notesApi.delete(id),
-      onSuccess: () => {
+      onMutate: async (id) => {
+         await queryClient.cancelQueries({ queryKey: ['notes'] });
+         const queries = queryClient.getQueriesData<{ data: Note[] }>({ queryKey: ['notes'] });
+         for (const [key, cached] of queries) {
+            if (cached && Array.isArray(cached.data)) {
+               queryClient.setQueryData(key, {
+                  ...cached,
+                  data: cached.data.filter((n: Note) => n.id !== id),
+               });
+            }
+         }
+         return { queries };
+      },
+      onError: (_err, _vars, context) => {
+         if (context?.queries) {
+            for (const [key, data] of context.queries) {
+               queryClient.setQueryData(key, data);
+            }
+         }
+      },
+      onSettled: () => {
          queryClient.invalidateQueries({ queryKey: ['notes'] });
          queryClient.invalidateQueries({ queryKey: ['categories'] });
       },

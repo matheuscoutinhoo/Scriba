@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Search, Plus, FolderPlus, Pin, PinOff, Archive, Trash2, Clock, FolderOpen, FileText, PanelLeftClose } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { Search, Plus, FolderPlus, Pin, PinOff, Archive, Trash2, Clock, FolderOpen, FileText, PanelLeftClose, Tag, X } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -48,6 +48,30 @@ export function Sidebar({
 }: SidebarProps) {
    const [activeTab, setActiveTab] = useState<SidebarTab>('categories');
    const [tabAnimKey, setTabAnimKey] = useState(0);
+   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
+
+   const allTags = useMemo(() => {
+      const tagMap = new Map<string, { id: string; name: string }>();
+      for (const note of notes) {
+         for (const tag of note.tags) {
+            if (!tagMap.has(tag.id)) {
+               tagMap.set(tag.id, { id: tag.id, name: tag.name });
+            }
+         }
+      }
+      return Array.from(tagMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+   }, [notes]);
+
+   const filteredNotes = useMemo(() => {
+      if (!selectedTagId) return notes;
+      return notes.filter((note) => note.tags.some((tag) => tag.id === selectedTagId));
+   }, [notes, selectedTagId]);
+
+   useEffect(() => {
+      if (selectedTagId && !allTags.some((t) => t.id === selectedTagId)) {
+         setSelectedTagId(null);
+      }
+   }, [selectedTagId, allTags]);
 
    const switchTab = (tab: SidebarTab) => {
       if (tab === activeTab) return;
@@ -160,17 +184,48 @@ export function Sidebar({
                            {searchQuery ? `Search: "${searchQuery}"` : 'Recent Notes'}
                         </span>
                         <span className="text-[10px] text-[var(--color-text-muted)]">
-                           {notes.length}
+                           {filteredNotes.length}
                         </span>
                      </div>
 
-                     {notes.length === 0 ? (
+                     {allTags.length > 0 && (
+                        <div className="px-3 py-1.5 flex items-center gap-1.5 flex-wrap">
+                           <Tag className="h-3 w-3 text-[var(--color-text-muted)] flex-shrink-0" />
+                           {allTags.map((tag) => (
+                              <button
+                                 key={tag.id}
+                                 onClick={() => setSelectedTagId(selectedTagId === tag.id ? null : tag.id)}
+                                 className={cn(
+                                    'text-[9px] px-1.5 py-0.5 rounded-full transition-colors cursor-pointer',
+                                    selectedTagId === tag.id
+                                       ? 'bg-[var(--color-accent)] text-white'
+                                       : 'bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)]'
+                                 )}
+                              >
+                                 {tag.name}
+                              </button>
+                           ))}
+                           {selectedTagId && (
+                              <button
+                                 onClick={() => setSelectedTagId(null)}
+                                 className="p-0.5 rounded-full hover:bg-[var(--color-bg-hover)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
+                                 title="Clear filter"
+                              >
+                                 <X className="h-3 w-3" />
+                              </button>
+                           )}
+                        </div>
+                     )}
+
+                     {filteredNotes.length === 0 ? (
                         <div className="px-3 py-4 text-center">
-                           <p className="text-[var(--color-text-muted)] text-xs">No notes yet</p>
+                           <p className="text-[var(--color-text-muted)] text-xs">
+                              {selectedTagId ? 'No notes with this tag' : 'No notes yet'}
+                           </p>
                         </div>
                      ) : (
                         <div className="flex flex-col">
-                           {notes.map((note) => (
+                           {filteredNotes.map((note) => (
                               <SidebarNoteCard
                                  key={note.id}
                                  note={note}

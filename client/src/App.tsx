@@ -54,11 +54,8 @@ function ScribaApp() {
   }, [updateNote]);
 
   const handleDeleteNote = useCallback((id: string) => {
-    deleteNote.mutate(id, {
-      onSuccess: () => {
-        setSelectedNoteId(null);
-      },
-    });
+    setSelectedNoteId((current) => current === id ? null : current);
+    deleteNote.mutate(id);
   }, [deleteNote]);
 
   const handleCreateCategory = useCallback((name: string, color: string, parentId?: string) => {
