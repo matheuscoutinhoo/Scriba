@@ -135,7 +135,7 @@
 
 /* Line-by-line live preview (Obsidian-like) */
 .markdown-line {
-  font-size: 0.875rem;
+  font-size: 1.006rem;
   line-height: 1.925;
   color: var(--color-text-primary);
 }
@@ -160,19 +160,19 @@
 }
 
 .markdown-line h1 {
-  font-size: 1.75rem;
+  font-size: 2.013rem;
 }
 
 .markdown-line h2 {
-  font-size: 1.375rem;
+  font-size: 1.581rem;
 }
 
 .markdown-line h3 {
-  font-size: 1.125rem;
+  font-size: 1.294rem;
 }
 
 .markdown-line h4 {
-  font-size: 1rem;
+  font-size: 1.15rem;
 }
 
 .markdown-line ul,

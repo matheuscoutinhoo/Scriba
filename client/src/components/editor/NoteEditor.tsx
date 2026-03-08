@@ -329,7 +329,8 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
                               setSelectAll(false);
                            }
                         }}
-                        className="w-full h-full bg-transparent border-none outline-none text-sm font-[family-name:var(--font-mono)] text-[var(--color-text-primary)] leading-relaxed resize-none"
+                        className="w-full h-full bg-transparent border-none outline-none font-[family-name:var(--font-mono)] text-[var(--color-text-primary)] leading-relaxed resize-none"
+                        style={{ fontSize: '1.006rem' }}
                         spellCheck={false}
                         autoComplete="off"
                      />
@@ -339,7 +340,8 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
                            e.preventDefault();
                            setEditingLineIndex(0);
                         }}
-                        className="text-sm text-[var(--color-text-muted)] cursor-text italic py-0.5"
+                        className="text-[var(--color-text-muted)] cursor-text italic py-0.5"
+                        style={{ fontSize: '1.006rem' }}
                      >
                         Click to start writing...
                      </div>
@@ -355,8 +357,8 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
                               onKeyDown={(e) => handleLineKeyDown(e, index)}
                               onPaste={(e) => handleLinePaste(e, index)}
                               onBlur={() => setEditingLineIndex(null)}
-                              className="w-full bg-transparent border-none outline-none text-sm font-[family-name:var(--font-mono)] text-[var(--color-text-primary)] py-0.5 block"
-                              style={{ lineHeight: '1.925' }}
+                              className="w-full bg-transparent border-none outline-none font-[family-name:var(--font-mono)] text-[var(--color-text-primary)] py-0.5 block"
+                              style={{ fontSize: '1.006rem', lineHeight: '1.925' }}
                               spellCheck={false}
                               autoComplete="off"
                            />
