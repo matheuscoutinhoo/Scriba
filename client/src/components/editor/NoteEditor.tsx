@@ -293,87 +293,87 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
                }}
             >
                <div className="max-w-3xl mx-auto w-full">
-            {selectAll ? (
-               <textarea
-                  ref={selectAllRef}
-                  value={content}
-                  onChange={(e) => {
-                     const newContent = e.target.value;
-                     setContent(newContent);
-                     handleAutoSave(title, newContent, tags);
-                  }}
-                  onBlur={() => setSelectAll(false)}
-                  onKeyDown={(e) => {
-                     if (e.key === 'Escape') {
-                        e.preventDefault();
-                        setSelectAll(false);
-                     }
-                  }}
-                  className="w-full h-full bg-transparent border-none outline-none text-sm font-[family-name:var(--font-mono)] text-[var(--color-text-primary)] leading-relaxed resize-none"
-                  spellCheck={false}
-                  autoComplete="off"
-               />
-            ) : content === '' && editingLineIndex === null ? (
-               <div
-                  onMouseDown={(e) => {
-                     e.preventDefault();
-                     setEditingLineIndex(0);
-                  }}
-                  className="text-sm text-[var(--color-text-muted)] cursor-text italic py-0.5"
-               >
-                  Click to start writing...
-               </div>
-            ) : (
-               lines.map((line, index) =>
-                  editingLineIndex === index ? (
-                     <input
-                        key={index}
-                        ref={lineInputRef}
-                        type="text"
-                        value={line}
-                        onChange={(e) => handleLineChange(index, e.target.value)}
-                        onKeyDown={(e) => handleLineKeyDown(e, index)}
-                        onPaste={(e) => handleLinePaste(e, index)}
-                        onBlur={() => setEditingLineIndex(null)}
-                        className="w-full bg-transparent border-none outline-none text-sm font-[family-name:var(--font-mono)] text-[var(--color-text-primary)] leading-relaxed py-0.5 block"
+                  {selectAll ? (
+                     <textarea
+                        ref={selectAllRef}
+                        value={content}
+                        onChange={(e) => {
+                           const newContent = e.target.value;
+                           setContent(newContent);
+                           handleAutoSave(title, newContent, tags);
+                        }}
+                        onBlur={() => setSelectAll(false)}
+                        onKeyDown={(e) => {
+                           if (e.key === 'Escape') {
+                              e.preventDefault();
+                              setSelectAll(false);
+                           }
+                        }}
+                        className="w-full h-full bg-transparent border-none outline-none text-sm font-[family-name:var(--font-mono)] text-[var(--color-text-primary)] leading-relaxed resize-none"
                         spellCheck={false}
                         autoComplete="off"
                      />
-                  ) : (
+                  ) : content === '' && editingLineIndex === null ? (
                      <div
-                        key={index}
-                        ref={(el) => {
-                           if (el) lineRefs.current.set(index, el);
-                           else lineRefs.current.delete(index);
-                        }}
                         onMouseDown={(e) => {
                            e.preventDefault();
-                           setEditingLineIndex(index);
+                           setEditingLineIndex(0);
                         }}
-                        className="cursor-text min-h-[1.5em]"
+                        className="text-sm text-[var(--color-text-muted)] cursor-text italic py-0.5"
                      >
-                        {line.trim() === '' ? (
-                           <div className="h-[1.5em]" />
-                        ) : (
-                           <div className="markdown-line">
-                              <ReactMarkdown
-                                 remarkPlugins={[remarkGfm]}
-                                 rehypePlugins={[rehypeSanitize]}
-                              >
-                                 {line}
-                              </ReactMarkdown>
-                           </div>
-                        )}
+                        Click to start writing...
                      </div>
-                  )
-               )
-            )}
+                  ) : (
+                     lines.map((line, index) =>
+                        editingLineIndex === index ? (
+                           <input
+                              key={index}
+                              ref={lineInputRef}
+                              type="text"
+                              value={line}
+                              onChange={(e) => handleLineChange(index, e.target.value)}
+                              onKeyDown={(e) => handleLineKeyDown(e, index)}
+                              onPaste={(e) => handleLinePaste(e, index)}
+                              onBlur={() => setEditingLineIndex(null)}
+                              className="w-full bg-transparent border-none outline-none text-sm font-[family-name:var(--font-mono)] text-[var(--color-text-primary)] leading-relaxed py-0.5 block"
+                              spellCheck={false}
+                              autoComplete="off"
+                           />
+                        ) : (
+                           <div
+                              key={index}
+                              ref={(el) => {
+                                 if (el) lineRefs.current.set(index, el);
+                                 else lineRefs.current.delete(index);
+                              }}
+                              onMouseDown={(e) => {
+                                 e.preventDefault();
+                                 setEditingLineIndex(index);
+                              }}
+                              className="cursor-text min-h-[1.5em]"
+                           >
+                              {line.trim() === '' ? (
+                                 <div className="h-[1.5em]" />
+                              ) : (
+                                 <div className="markdown-line">
+                                    <ReactMarkdown
+                                       remarkPlugins={[remarkGfm]}
+                                       rehypePlugins={[rehypeSanitize]}
+                                    >
+                                       {line}
+                                    </ReactMarkdown>
+                                 </div>
+                              )}
+                           </div>
+                        )
+                     )
+                  )}
                </div>
             </div>
 
-            {/* Table of Contents - right side */}
+            {/* Table of Contents - right side (overlay) */}
             {headings.length > 0 && (
-               <div className="w-52 flex-shrink-0 overflow-y-auto py-4 pr-3 pl-2 border-l border-[var(--color-border)] opacity-0 group-hover/editor:opacity-100 transition-opacity duration-300">
+               <div className="absolute right-0 top-0 bottom-0 w-52 overflow-y-auto py-4 pr-3 pl-2 opacity-0 group-hover/editor:opacity-100 transition-opacity duration-300 pointer-events-none group-hover/editor:pointer-events-auto">
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] block mb-2">
                      On this page
                   </span>
