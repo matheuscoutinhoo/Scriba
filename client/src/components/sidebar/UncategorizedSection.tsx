@@ -12,10 +12,11 @@ interface UncategorizedSectionProps {
    onToggleArchive?: (note: Note) => void;
    onDeleteNote?: (id: string) => void;
    onDropNote: (noteId: string, categoryId: string | null) => void;
+   defaultExpanded?: boolean;
 }
 
-export function UncategorizedSection({ selectedNoteId, onSelectNote, onTogglePin, onToggleArchive, onDeleteNote, onDropNote }: UncategorizedSectionProps) {
-   const [expanded, setExpanded] = useState(false);
+export function UncategorizedSection({ selectedNoteId, onSelectNote, onTogglePin, onToggleArchive, onDeleteNote, onDropNote, defaultExpanded = false }: UncategorizedSectionProps) {
+   const [expanded, setExpanded] = useState(defaultExpanded);
    const [isDragOver, setIsDragOver] = useState(false);
    const contentRef = useRef<HTMLDivElement>(null);
    const [contentHeight, setContentHeight] = useState(0);
@@ -27,6 +28,10 @@ export function UncategorizedSection({ selectedNoteId, onSelectNote, onTogglePin
          .filter((n) => !n.category_id)
          .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
    }, [allNotes]);
+
+   useEffect(() => {
+      if (defaultExpanded) setExpanded(true);
+   }, [defaultExpanded]);
 
    useEffect(() => {
       if (contentRef.current) {

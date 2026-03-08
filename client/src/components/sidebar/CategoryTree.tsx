@@ -73,6 +73,7 @@ export function CategoryTree({ selectedId, onSelect, onDropNote, onDropCategory,
             onToggleArchive={onToggleArchive}
             onDeleteNote={onDeleteNote}
             onDropNote={onDropNote}
+            defaultExpanded={!categories?.length}
          />
 
          {isDraggingCategorized && (
