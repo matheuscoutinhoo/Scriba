@@ -205,9 +205,10 @@ export function SidebarNoteCard({ note, isSelected, onClick, onTogglePin, onTogg
          className={cn(
             'group relative w-full text-left px-3 py-2 border-b border-[var(--color-border)] transition-colors cursor-pointer',
             isSelected
-               ? 'bg-[var(--color-accent-soft)] border-l-2 border-l-[var(--color-accent)]'
+               ? 'border-l-2 border-l-[var(--color-accent)]'
                : 'hover:bg-[var(--color-bg-hover)]'
          )}
+         style={isSelected ? { background: 'linear-gradient(to right, var(--color-accent-soft) 0%, transparent 30%)' } : undefined}
          draggable
          onDragStart={(e) => {
             e.dataTransfer.setData('text/x-note-id', note.id);

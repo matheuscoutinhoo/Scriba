@@ -110,10 +110,10 @@ export function CategoryTree({ selectedId, onSelect, onDropNote, selectedNoteId,
                         className={cn(
                            'w-full text-left py-1 text-xs flex items-center gap-1.5 transition-colors cursor-pointer',
                            selectedNoteId === note.id
-                              ? 'bg-[var(--color-accent-soft)] text-[var(--color-accent)]'
+                              ? 'border-l-2 border-l-[var(--color-accent)] text-[var(--color-accent)]'
                               : 'text-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-secondary)]'
                         )}
-                        style={{ paddingLeft: '28px' }}
+                        style={{ paddingLeft: '28px', ...(selectedNoteId === note.id ? { background: 'linear-gradient(to right, var(--color-accent-soft) 0%, transparent 30%)' } : {}) }}
                      >
                         <FileText className="h-3 w-3 flex-shrink-0" />
                         <span className="truncate">{note.title || 'Untitled'}</span>
@@ -281,10 +281,10 @@ function CategoryNode({ category, selectedId, onSelect, onDropNote, selectedNote
                         className={cn(
                            'w-full text-left py-1 text-xs flex items-center gap-1.5 transition-colors cursor-pointer',
                            selectedNoteId === note.id
-                              ? 'bg-[var(--color-accent-soft)] text-[var(--color-accent)]'
+                              ? 'border-l-2 border-l-[var(--color-accent)] text-[var(--color-accent)]'
                               : 'text-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-secondary)]'
                         )}
-                        style={{ paddingLeft: `${28 + depth * 16}px` }}
+                        style={{ paddingLeft: `${28 + depth * 16}px`, ...(selectedNoteId === note.id ? { background: 'linear-gradient(to right, var(--color-accent-soft) 0%, transparent 30%)' } : {}) }}
                      >
                         <FileText className="h-3 w-3 flex-shrink-0" />
                         <span className="truncate">{note.title || 'Untitled'}</span>

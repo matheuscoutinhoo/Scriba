@@ -22,7 +22,7 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
    const [editingLineIndex, setEditingLineIndex] = useState<number | null>(null);
    const [selectAll, setSelectAll] = useState(false);
    const [isDirty, setIsDirty] = useState(false);
-   const [fontScale, setFontScale] = useState(120);
+   const [fontScale, setFontScale] = useState(100);
    const lineInputRef = useRef<HTMLInputElement>(null);
    const selectAllRef = useRef<HTMLTextAreaElement>(null);
    const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -250,33 +250,14 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
             </div>
          </div>
 
-         {/* Title with font size controls */}
-         <div className="max-w-3xl mx-auto w-full px-8 pt-6 pb-2 flex items-center gap-2">
-            <div className="flex items-center gap-1 flex-shrink-0">
-               <button
-                  onClick={() => setFontScale(s => Math.max(50, s - 10))}
-                  className="p-1 rounded hover:bg-[var(--color-bg-hover)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
-                  title="Decrease font size"
-               >
-                  <Minus className="h-3.5 w-3.5" />
-               </button>
-               <span className="text-[10px] text-[var(--color-text-muted)] w-8 text-center tabular-nums">{fontScale}%</span>
-               <button
-                  onClick={() => setFontScale(s => Math.min(200, s + 10))}
-                  className="p-1 rounded hover:bg-[var(--color-bg-hover)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
-                  title="Increase font size"
-               >
-                  <Plus className="h-3.5 w-3.5" />
-               </button>
-            </div>
+         {/* Title */}
+         <div className="max-w-3xl mx-auto w-full px-8 pt-6 pb-2">
             <Input
                value={title}
                onChange={(e) => handleTitleChange(e.target.value)}
                placeholder="Note title..."
                className="border-none bg-transparent text-2xl font-bold px-0 h-auto focus-visible:ring-0 text-center"
             />
-            {/* Spacer to balance the layout */}
-            <div className="w-[88px] flex-shrink-0" />
          </div>
 
          {/* Tags */}
@@ -394,10 +375,31 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
                </div>
             </div>
 
+            {/* Zoom controls - right side (always visible) */}
+            <div className="absolute right-0 top-0 w-64 py-4 pr-3 pl-2">
+               <div className="flex items-center gap-1">
+                  <button
+                     onClick={() => setFontScale(s => Math.max(50, s - 10))}
+                     className="p-1 rounded hover:bg-[var(--color-bg-hover)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
+                     title="Decrease font size"
+                  >
+                     <Minus className="h-3.5 w-3.5" />
+                  </button>
+                  <span className="text-[12px] text-[var(--color-text-muted)] w-8 text-center tabular-nums">{fontScale}%</span>
+                  <button
+                     onClick={() => setFontScale(s => Math.min(200, s + 10))}
+                     className="p-1 rounded hover:bg-[var(--color-bg-hover)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
+                     title="Increase font size"
+                  >
+                     <Plus className="h-3.5 w-3.5" />
+                  </button>
+               </div>
+            </div>
+
             {/* Table of Contents - right side (overlay) */}
             {headings.length > 0 && (
-               <div className="absolute right-0 top-0 bottom-0 w-52 overflow-y-auto py-4 pr-3 pl-2 opacity-0 group-hover/editor:opacity-100 transition-opacity duration-300 pointer-events-none group-hover/editor:pointer-events-auto">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] block mb-2">
+               <div className="absolute right-0 top-10 bottom-0 w-64 overflow-y-auto py-4 pr-3 pl-2 opacity-0 group-hover/editor:opacity-100 transition-opacity duration-300 pointer-events-none group-hover/editor:pointer-events-auto">
+                  <span className="text-[12px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] block mb-2">
                      On this page
                   </span>
                   <nav className="flex flex-col gap-0.5">
@@ -405,8 +407,8 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
                         <button
                            key={`${h.lineIndex}-${i}`}
                            onClick={() => scrollToHeading(h.lineIndex)}
-                           className="text-left text-[11px] py-0.5 text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors truncate cursor-pointer"
-                           style={{ paddingLeft: `${(h.level - 1) * 10}px` }}
+                           className="text-left text-[13px] py-0.5 text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors truncate cursor-pointer"
+                           style={{ paddingLeft: `${(h.level - 1) * 12}px` }}
                            title={h.text}
                         >
                            {h.text}
