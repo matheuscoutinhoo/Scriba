@@ -6,7 +6,9 @@ import { Input } from '@/components/ui/Input';
 interface CreateCategoryDialogProps {
    isOpen: boolean;
    onClose: () => void;
-   onCreate: (name: string, color: string) => void;
+   onCreate: (name: string, color: string, parentId?: string) => void;
+   parentId?: string;
+   parentName?: string;
 }
 
 const COLORS = [
@@ -14,7 +16,7 @@ const COLORS = [
    '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899',
 ];
 
-export function CreateCategoryDialog({ isOpen, onClose, onCreate }: CreateCategoryDialogProps) {
+export function CreateCategoryDialog({ isOpen, onClose, onCreate, parentId, parentName }: CreateCategoryDialogProps) {
    const [name, setName] = useState('');
    const [color, setColor] = useState(COLORS[0]);
 
@@ -31,7 +33,7 @@ export function CreateCategoryDialog({ isOpen, onClose, onCreate }: CreateCatego
    const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
       if (name.trim()) {
-         onCreate(name.trim(), color);
+         onCreate(name.trim(), color, parentId);
          setName('');
          setColor(COLORS[0]);
          onClose();
@@ -45,7 +47,7 @@ export function CreateCategoryDialog({ isOpen, onClose, onCreate }: CreateCatego
             onClick={(e) => e.stopPropagation()}
          >
             <div className="flex items-center justify-between mb-4">
-               <h2 className="text-lg font-semibold">New Category</h2>
+               <h2 className="text-lg font-semibold">{parentName ? 'New Subcategory' : 'New Category'}</h2>
                <Button variant="ghost" size="icon" onClick={onClose}>
                   <X className="h-4 w-4" />
                </Button>
@@ -53,6 +55,11 @@ export function CreateCategoryDialog({ isOpen, onClose, onCreate }: CreateCatego
 
             <form onSubmit={handleSubmit}>
                <div className="space-y-4">
+                  {parentName && (
+                     <p className="text-xs text-[var(--color-text-muted)]">
+                        Inside: <span className="text-[var(--color-text-secondary)] font-medium">{parentName}</span>
+                     </p>
+                  )}
                   <div>
                      <label className="text-sm text-[var(--color-text-secondary)] block mb-1.5">
                         Name

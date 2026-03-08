@@ -1,4 +1,4 @@
-import { Folder, FolderOpen, ChevronRight, ChevronDown, FileText, Clock, Pencil, Palette, Trash } from 'lucide-react';
+import { Folder, FolderOpen, ChevronRight, ChevronDown, FileText, Clock, Pencil, Palette, Trash, FolderPlus } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useNotes } from '@/hooks/useNotes';
 import { useUpdateCategory, useDeleteCategory } from '@/hooks/useCategories';
@@ -13,6 +13,8 @@ export interface CategoryNodeProps {
    selectedId: string | null;
    onSelect: (id: string) => void;
    onDropNote: (noteId: string, categoryId: string) => void;
+   onDropCategory?: (categoryId: string, newParentId: string) => void;
+   onCreateSubcategory?: (parentId: string, parentName: string) => void;
    selectedNoteId?: string | null;
    onSelectNote?: (id: string) => void;
    onTogglePin?: (note: Note) => void;
@@ -22,7 +24,7 @@ export interface CategoryNodeProps {
    onDragCategorizedNote?: () => void;
 }
 
-export function CategoryNode({ category, selectedId, onSelect, onDropNote, selectedNoteId, onSelectNote, onTogglePin, onToggleArchive, onDeleteNote, depth, onDragCategorizedNote }: CategoryNodeProps) {
+export function CategoryNode({ category, selectedId, onSelect, onDropNote, onDropCategory, onCreateSubcategory, selectedNoteId, onSelectNote, onTogglePin, onToggleArchive, onDeleteNote, depth, onDragCategorizedNote }: CategoryNodeProps) {
    const [expanded, setExpanded] = useState(false);
    const [isDragOver, setIsDragOver] = useState(false);
    const contentRef = useRef<HTMLDivElement>(null);
@@ -94,6 +96,11 @@ export function CategoryNode({ category, selectedId, onSelect, onDropNote, selec
                e.stopPropagation();
                setCtxMenu({ x: e.clientX, y: e.clientY });
             }}
+            draggable
+            onDragStart={(e) => {
+               e.dataTransfer.setData('text/x-category-id', category.id);
+               e.dataTransfer.effectAllowed = 'move';
+            }}
             onDragOver={(e) => {
                e.preventDefault();
                e.dataTransfer.dropEffect = 'move';
@@ -105,7 +112,9 @@ export function CategoryNode({ category, selectedId, onSelect, onDropNote, selec
                e.stopPropagation();
                setIsDragOver(false);
                const noteId = e.dataTransfer.getData('text/x-note-id');
-               if (noteId) onDropNote(noteId, category.id);
+               if (noteId) { onDropNote(noteId, category.id); return; }
+               const catId = e.dataTransfer.getData('text/x-category-id');
+               if (catId && catId !== category.id) onDropCategory?.(catId, category.id);
             }}
             className={cn(
                'w-full text-left py-1.5 text-sm flex items-center gap-1.5 transition-colors cursor-pointer',
@@ -173,6 +182,15 @@ export function CategoryNode({ category, selectedId, onSelect, onDropNote, selec
                   <Pencil className="h-3.5 w-3.5" /> Rename
                </button>
                <button
+                  onClick={() => {
+                     setCtxMenu(null);
+                     onCreateSubcategory?.(category.id, category.name);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
+               >
+                  <FolderPlus className="h-3.5 w-3.5" /> New Subcategory
+               </button>
+               <button
                   onClick={() => { setShowColorPicker((v) => !v); }}
                   className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
                >
@@ -216,6 +234,8 @@ export function CategoryNode({ category, selectedId, onSelect, onDropNote, selec
                      selectedId={selectedId}
                      onSelect={onSelect}
                      onDropNote={onDropNote}
+                     onDropCategory={onDropCategory}
+                     onCreateSubcategory={onCreateSubcategory}
                      selectedNoteId={selectedNoteId}
                      onSelectNote={onSelectNote}
                      onTogglePin={onTogglePin}

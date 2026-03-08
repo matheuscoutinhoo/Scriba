@@ -45,8 +45,7 @@
 
   input,
   textarea,
-  [contenteditable="true"],
-  .cursor-text {
+  [contenteditable="true"] {
     cursor: text;
   }
 

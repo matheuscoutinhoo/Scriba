@@ -5,7 +5,7 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { NoteEditor } from '@/components/editor/NoteEditor';
 import { CreateCategoryDialog } from '@/components/dialogs/CreateCategoryDialog';
 import { useNotes, useNote, useCreateNote, useUpdateNote, useDeleteNote, useSearchNotes } from '@/hooks/useNotes';
-import { useCreateCategory } from '@/hooks/useCategories';
+import { useCreateCategory, useUpdateCategory } from '@/hooks/useCategories';
 import type { UpdateNotePayload } from '@/lib/types';
 
 const queryClient = new QueryClient({
@@ -22,6 +22,7 @@ function ScribaApp() {
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
+  const [categoryDialogParent, setCategoryDialogParent] = useState<{ id: string; name: string } | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const { data: notes = [] } = useNotes();
@@ -30,6 +31,7 @@ function ScribaApp() {
   const updateNote = useUpdateNote();
   const deleteNote = useDeleteNote();
   const createCategory = useCreateCategory();
+  const updateCategory = useUpdateCategory();
 
   const displayedNotes = searchQuery ? searchResults : notes;
   const { data: individualNote } = useNote(selectedNoteId || undefined);
@@ -59,9 +61,18 @@ function ScribaApp() {
     });
   }, [deleteNote]);
 
-  const handleCreateCategory = useCallback((name: string, color: string) => {
-    createCategory.mutate({ name, color });
+  const handleCreateCategory = useCallback((name: string, color: string, parentId?: string) => {
+    createCategory.mutate({ name, color, parent_id: parentId });
   }, [createCategory]);
+
+  const handleCreateSubcategory = useCallback((parentId: string, parentName: string) => {
+    setCategoryDialogParent({ id: parentId, name: parentName });
+    setShowCategoryDialog(true);
+  }, []);
+
+  const handleDropCategory = useCallback((categoryId: string, newParentId: string) => {
+    updateCategory.mutate({ id: categoryId, parent_id: newParentId });
+  }, [updateCategory]);
 
   const handleMoveNoteToCategory = useCallback((noteId: string, categoryId: string | null) => {
     updateNote.mutate({ id: noteId, category_id: categoryId });
@@ -104,9 +115,14 @@ function ScribaApp() {
               }}
               onSearch={setSearchQuery}
               onNewNote={handleNewNote}
-              onNewCategory={() => setShowCategoryDialog(true)}
+              onNewCategory={() => {
+                setCategoryDialogParent(null);
+                setShowCategoryDialog(true);
+              }}
+              onCreateSubcategory={handleCreateSubcategory}
               onSelectNote={setSelectedNoteId}
               onMoveNoteToCategory={handleMoveNoteToCategory}
+              onDropCategory={handleDropCategory}
               onTogglePin={handleTogglePin}
               onToggleArchive={handleToggleArchive}
               onDeleteNote={handleDeleteNote}
@@ -139,8 +155,10 @@ function ScribaApp() {
 
       <CreateCategoryDialog
         isOpen={showCategoryDialog}
-        onClose={() => setShowCategoryDialog(false)}
+        onClose={() => { setShowCategoryDialog(false); setCategoryDialogParent(null); }}
         onCreate={handleCreateCategory}
+        parentId={categoryDialogParent?.id}
+        parentName={categoryDialogParent?.name}
       />
     </div>
   );

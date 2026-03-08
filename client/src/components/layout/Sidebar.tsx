@@ -18,8 +18,10 @@ interface SidebarProps {
    onSearch: (query: string) => void;
    onNewNote: () => void;
    onNewCategory: () => void;
+   onCreateSubcategory: (parentId: string, parentName: string) => void;
    onSelectNote: (id: string) => void;
    onMoveNoteToCategory: (noteId: string, categoryId: string | null) => void;
+   onDropCategory: (categoryId: string, newParentId: string) => void;
    onTogglePin: (note: Note) => void;
    onToggleArchive: (note: Note) => void;
    onDeleteNote: (id: string) => void;
@@ -35,8 +37,10 @@ export function Sidebar({
    onSearch,
    onNewNote,
    onNewCategory,
+   onCreateSubcategory,
    onSelectNote,
    onMoveNoteToCategory,
+   onDropCategory,
    onTogglePin,
    onToggleArchive,
    onDeleteNote,
@@ -140,6 +144,8 @@ export function Sidebar({
                         selectedId={selectedCategoryId}
                         onSelect={onSelectCategory}
                         onDropNote={onMoveNoteToCategory}
+                        onDropCategory={onDropCategory}
+                        onCreateSubcategory={onCreateSubcategory}
                         selectedNoteId={selectedNoteId}
                         onSelectNote={onSelectNote}
                         onTogglePin={onTogglePin}

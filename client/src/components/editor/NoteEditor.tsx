@@ -335,7 +335,7 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
                               e.preventDefault();
                               setEditingLineIndex(0);
                            }}
-                           className="text-[var(--color-text-muted)] cursor-text italic py-0.5"
+                           className="text-[var(--color-text-muted)] italic py-0.5"
                            style={{ fontSize: '1.006rem' }}
                         >
                            Click to start writing...
@@ -375,7 +375,7 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
                                     e.preventDefault();
                                     setEditingLineIndex(index);
                                  }}
-                                 className="cursor-text min-h-[1.5em]"
+                                 className="min-h-[1.5em]"
                               >
                                  {line.trim() === '' ? (
                                     <div className="h-[1.5em]" />

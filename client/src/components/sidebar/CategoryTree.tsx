@@ -9,6 +9,8 @@ interface CategoryTreeProps {
    selectedId: string | null;
    onSelect: (id: string | null) => void;
    onDropNote: (noteId: string, categoryId: string | null) => void;
+   onDropCategory?: (categoryId: string, newParentId: string) => void;
+   onCreateSubcategory?: (parentId: string, parentName: string) => void;
    selectedNoteId?: string | null;
    onSelectNote?: (id: string) => void;
    onTogglePin?: (note: Note) => void;
@@ -16,7 +18,7 @@ interface CategoryTreeProps {
    onDeleteNote?: (id: string) => void;
 }
 
-export function CategoryTree({ selectedId, onSelect, onDropNote, selectedNoteId, onSelectNote, onTogglePin, onToggleArchive, onDeleteNote }: CategoryTreeProps) {
+export function CategoryTree({ selectedId, onSelect, onDropNote, onDropCategory, onCreateSubcategory, selectedNoteId, onSelectNote, onTogglePin, onToggleArchive, onDeleteNote }: CategoryTreeProps) {
    const { data: categories, isLoading } = useCategories();
    const [isDraggingCategorized, setIsDraggingCategorized] = useState(false);
    const [isDropHover, setIsDropHover] = useState(false);
@@ -46,6 +48,8 @@ export function CategoryTree({ selectedId, onSelect, onDropNote, selectedNoteId,
                selectedId={selectedId}
                onSelect={onSelect}
                onDropNote={onDropNote}
+               onDropCategory={onDropCategory}
+               onCreateSubcategory={onCreateSubcategory}
                selectedNoteId={selectedNoteId}
                onSelectNote={onSelectNote}
                onTogglePin={onTogglePin}
