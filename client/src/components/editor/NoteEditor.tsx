@@ -300,7 +300,7 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
             {/* Content - Line-by-line live preview editor */}
             <div
                className="flex-1 overflow-y-auto px-8 py-4"
-               style={{ fontSize: `${fontScale}%` }}
+               style={{ zoom: fontScale / 100 }}
                onMouseDown={(e) => {
                   if (e.target === e.currentTarget) {
                      e.preventDefault();
