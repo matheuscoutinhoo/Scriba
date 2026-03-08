@@ -112,9 +112,9 @@ export function CategoryNode({ category, selectedId, onSelect, onDropNote, onDro
                e.stopPropagation();
                setIsDragOver(false);
                const noteId = e.dataTransfer.getData('text/x-note-id');
-               if (noteId) { onDropNote(noteId, category.id); return; }
+               if (noteId) { onDropNote(noteId, category.id); setExpanded(true); return; }
                const catId = e.dataTransfer.getData('text/x-category-id');
-               if (catId && catId !== category.id) onDropCategory?.(catId, category.id);
+               if (catId && catId !== category.id) { onDropCategory?.(catId, category.id); setExpanded(true); }
             }}
             className={cn(
                'w-full text-left py-1.5 text-sm flex items-center gap-1.5 transition-colors cursor-pointer',
