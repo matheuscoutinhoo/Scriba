@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeSanitize from 'rehype-sanitize';
-import { Pin, PinOff, Trash2, Archive, Save } from 'lucide-react';
+import { Pin, PinOff, Trash2, Archive, Save, Plus, Minus } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
@@ -22,6 +22,7 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
    const [editingLineIndex, setEditingLineIndex] = useState<number | null>(null);
    const [selectAll, setSelectAll] = useState(false);
    const [isDirty, setIsDirty] = useState(false);
+   const [fontScale, setFontScale] = useState(100);
    const lineInputRef = useRef<HTMLInputElement>(null);
    const selectAllRef = useRef<HTMLTextAreaElement>(null);
    const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -249,14 +250,33 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
             </div>
          </div>
 
-         {/* Title */}
-         <div className="max-w-3xl mx-auto w-full px-8 pt-6 pb-2">
+         {/* Title with font size controls */}
+         <div className="max-w-3xl mx-auto w-full px-8 pt-6 pb-2 flex items-center gap-2">
+            <div className="flex items-center gap-1 flex-shrink-0">
+               <button
+                  onClick={() => setFontScale(s => Math.max(50, s - 10))}
+                  className="p-1 rounded hover:bg-[var(--color-bg-hover)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
+                  title="Decrease font size"
+               >
+                  <Minus className="h-3.5 w-3.5" />
+               </button>
+               <span className="text-[10px] text-[var(--color-text-muted)] w-8 text-center tabular-nums">{fontScale}%</span>
+               <button
+                  onClick={() => setFontScale(s => Math.min(200, s + 10))}
+                  className="p-1 rounded hover:bg-[var(--color-bg-hover)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
+                  title="Increase font size"
+               >
+                  <Plus className="h-3.5 w-3.5" />
+               </button>
+            </div>
             <Input
                value={title}
                onChange={(e) => handleTitleChange(e.target.value)}
                placeholder="Note title..."
                className="border-none bg-transparent text-2xl font-bold px-0 h-auto focus-visible:ring-0 text-center"
             />
+            {/* Spacer to balance the layout */}
+            <div className="w-[88px] flex-shrink-0" />
          </div>
 
          {/* Tags */}
@@ -280,6 +300,7 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
             {/* Content - Line-by-line live preview editor */}
             <div
                className="flex-1 overflow-y-auto px-8 py-4"
+               style={{ fontSize: `${fontScale}%` }}
                onMouseDown={(e) => {
                   if (e.target === e.currentTarget) {
                      e.preventDefault();
