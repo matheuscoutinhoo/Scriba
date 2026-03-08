@@ -280,7 +280,19 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
          <div className="flex-1 flex overflow-hidden relative">
             {/* Content - Line-by-line live preview editor */}
             <div
-               className="flex-1 overflow-y-auto px-8 py-4"
+               className="flex-1 overflow-y-auto px-8 py-4 outline-none"
+               tabIndex={0}
+               onKeyDown={(e) => {
+                  if (editingLineIndex === null && !selectAll && lines.length > 0) {
+                     if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        setEditingLineIndex(0);
+                     } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        setEditingLineIndex(lines.length - 1);
+                     }
+                  }
+               }}
                onMouseDown={(e) => {
                   if (e.target === e.currentTarget) {
                      e.preventDefault();

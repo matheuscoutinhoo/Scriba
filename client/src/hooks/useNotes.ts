@@ -2,11 +2,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { notesApi } from '@/lib/api';
 import type { CreateNotePayload, UpdateNotePayload } from '@/lib/types';
 
-export function useNotes(params?: { archived?: boolean; category_id?: string }) {
+export function useNotes(params?: { archived?: boolean; category_id?: string }, options?: { enabled?: boolean }) {
    return useQuery({
       queryKey: ['notes', params],
       queryFn: () => notesApi.getAll(params),
       select: (data) => data.data,
+      enabled: options?.enabled ?? true,
    });
 }
 

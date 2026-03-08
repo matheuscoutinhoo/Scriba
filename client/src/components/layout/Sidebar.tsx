@@ -107,7 +107,7 @@ export function Sidebar({
                className={cn(
                   'flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium transition-colors cursor-pointer',
                   activeTab === 'categories'
-                     ? 'text-[var(--color-accent)] border-b-2 border-[var(--color-accent)]'
+                     ? 'text-white border-b-2 border-white'
                      : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'
                )}
             >
@@ -119,7 +119,7 @@ export function Sidebar({
                className={cn(
                   'flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium transition-colors cursor-pointer',
                   activeTab === 'notes'
-                     ? 'text-[var(--color-accent)] border-b-2 border-[var(--color-accent)]'
+                     ? 'text-white border-b-2 border-white'
                      : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'
                )}
             >
@@ -217,7 +217,7 @@ export function SidebarNoteCard({ note, isSelected, onClick, onTogglePin, onTogg
          onClick={onClick}
       >
          <div className="flex items-start justify-between gap-2">
-            <h3 className="text-xs font-medium truncate flex-1">
+            <h3 className="text-[0.9rem] font-medium truncate flex-1">
                {note.title}
             </h3>
             <div className="flex items-center gap-1 flex-shrink-0">
