@@ -282,7 +282,7 @@ export function SidebarNoteCard({ note, isSelected, onClick, onTogglePin, onTogg
                   </span>
                )}
             </div>
-            <span className="text-[9px] text-[var(--color-text-muted)] flex items-center gap-0.5">
+            <span className="text-[9px] text-[var(--color-text-muted)] flex items-center gap-1">
                <Clock className="h-2.5 w-2.5" />
                {formattedDate}
             </span>

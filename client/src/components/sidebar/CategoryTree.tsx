@@ -1,4 +1,4 @@
-import { Folder, FolderOpen, ChevronRight, ChevronDown, FileText, Pin, PinOff, Archive, Trash2 } from 'lucide-react';
+import { Folder, FolderOpen, ChevronRight, ChevronDown, FileText, Pin, PinOff, Archive, Trash2, Clock } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useCategories } from '@/hooks/useCategories';
 import { useNotes } from '@/hooks/useNotes';
@@ -172,50 +172,70 @@ function CategoryNode({ category, selectedId, onSelect, onDropNote, selectedNote
                ))}
 
                {/* Notes inside this category */}
-               {categoryNotes?.map((note) => (
-                  <div
-                     key={note.id}
-                     className="group relative"
-                  >
-                     <button
-                        onClick={() => onSelectNote?.(note.id)}
-                        draggable
-                        onDragStart={(e) => {
-                           e.dataTransfer.setData('text/x-note-id', note.id);
-                           e.dataTransfer.effectAllowed = 'move';
-                        }}
-                        className={cn(
-                           'w-full text-left py-1 text-[0.9rem] flex items-center gap-1.5 transition-colors cursor-pointer',
-                           selectedNoteId === note.id
-                              ? 'border-l-2 border-l-[var(--color-accent)] text-white'
-                              : 'text-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-secondary)]'
-                        )}
-                        style={{ paddingLeft: `${28 + depth * 16}px`, ...(selectedNoteId === note.id ? { background: 'linear-gradient(to right, var(--color-accent-soft) 0%, transparent 30%)' } : {}) }}
+               {categoryNotes?.map((note) => {
+                  const formattedDate = new Date(note.created_at).toLocaleDateString('pt-BR', {
+                     day: '2-digit',
+                     month: 'short',
+                  });
+                  return (
+                     <div
+                        key={note.id}
+                        className="group relative"
                      >
-                        <FileText className="h-3 w-3 flex-shrink-0" />
-                        <span className="truncate">{note.title || 'Untitled'}</span>
-                     </button>
-                     <NoteActionButtons note={note} onTogglePin={onTogglePin} onToggleArchive={onToggleArchive} onDeleteNote={onDeleteNote} right="4px" />
-                  </div>
-               ))}
+                        <div
+                           onClick={() => onSelectNote?.(note.id)}
+                           draggable
+                           onDragStart={(e) => {
+                              e.dataTransfer.setData('text/x-note-id', note.id);
+                              e.dataTransfer.effectAllowed = 'move';
+                           }}
+                           className={cn(
+                              'w-full text-left py-1.5 transition-colors cursor-pointer',
+                              selectedNoteId === note.id
+                                 ? 'border-l-2 border-l-[var(--color-accent)] text-white'
+                                 : 'text-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-secondary)]'
+                           )}
+                           style={{ paddingLeft: `${28 + depth * 16}px`, paddingRight: '8px', ...(selectedNoteId === note.id ? { background: 'linear-gradient(to right, var(--color-accent-soft) 0%, transparent 30%)' } : {}) }}
+                        >
+                           <div className="flex items-center gap-1.5">
+                              <FileText className="h-3 w-3 flex-shrink-0" />
+                              <span className="truncate text-[0.9rem]">{note.title || 'Untitled'}</span>
+                           </div>
+                           {note.excerpt && (
+                              <p className="text-[10px] text-[var(--color-text-muted)] mt-0.5 line-clamp-1" style={{ paddingLeft: '18px' }}>
+                                 {note.excerpt}
+                              </p>
+                           )}
+                           <div className="flex items-center justify-end mt-0.5" style={{ paddingLeft: '18px' }}>
+                              <span className="text-[9px] text-[var(--color-text-muted)] flex items-center gap-1">
+                                 <Clock className="h-2.5 w-2.5" />
+                                 {formattedDate}
+                              </span>
+                           </div>
+                        </div>
+                        <NoteActionButtons note={note} onTogglePin={onTogglePin} onToggleArchive={onToggleArchive} onDeleteNote={onDeleteNote} right="8px" top="6px" />
+                     </div>
+                  );
+               })}
             </div>
          </div>
       </div>
    );
 }
 
-function NoteActionButtons({ note, onTogglePin, onToggleArchive, onDeleteNote, right }: {
+function NoteActionButtons({ note, onTogglePin, onToggleArchive, onDeleteNote, right, top }: {
    note: Note;
    onTogglePin?: (note: Note) => void;
    onToggleArchive?: (note: Note) => void;
    onDeleteNote?: (id: string) => void;
    right?: string;
+   top?: string;
 }) {
    if (!onTogglePin && !onToggleArchive && !onDeleteNote) return null;
    return (
       <div
-         className="absolute top-1/2 -translate-y-1/2 hidden group-hover:flex items-center gap-0.5 bg-[var(--color-bg-secondary)] rounded shadow-sm border border-[var(--color-border)] px-0.5 py-0.5"
-         style={{ right: right ?? '4px' }}
+         className="absolute hidden group-hover:flex items-center gap-0.5 bg-[var(--color-bg-secondary)] rounded shadow-sm border border-[var(--color-border)] px-0.5 py-0.5"
+         style={{ right: right ?? '4px', top: top ?? '50%', transform: top ? 'none' : 'translateY(-50%)' }}
       >
          {onTogglePin && (
             <button

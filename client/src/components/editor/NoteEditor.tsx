@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeSanitize from 'rehype-sanitize';
-import { Pin, PinOff, Trash2, Archive, Save, Plus, Minus } from 'lucide-react';
+import { Pin, PinOff, Trash2, Archive, Save, Plus, Minus, Bold, Italic, Underline, Strikethrough, Code, Highlighter, Heading1, Heading2, Heading3, List, ListOrdered, Quote } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
@@ -23,6 +23,7 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
    const [selectAll, setSelectAll] = useState(false);
    const [isDirty, setIsDirty] = useState(false);
    const [fontScale, setFontScale] = useState(100);
+   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; lineIndex: number } | null>(null);
    const lineInputRef = useRef<HTMLInputElement>(null);
    const selectAllRef = useRef<HTMLTextAreaElement>(null);
    const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -199,6 +200,49 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
       }
    };
 
+   const applyInlineFormat = (wrapper: string) => {
+      const input = lineInputRef.current;
+      if (!input || editingLineIndex === null) return;
+      const start = input.selectionStart ?? 0;
+      const end = input.selectionEnd ?? 0;
+      const line = lines[editingLineIndex];
+      const selected = line.substring(start, end);
+      const newLine = line.substring(0, start) + wrapper + (selected || 'text') + wrapper + line.substring(end);
+      handleLineChange(editingLineIndex, newLine);
+      const newCursorPos = start + wrapper.length + (selected || 'text').length + wrapper.length;
+      requestAnimationFrame(() => {
+         if (lineInputRef.current) {
+            lineInputRef.current.focus();
+            const selStart = start + wrapper.length;
+            lineInputRef.current.setSelectionRange(selStart, selStart + (selected || 'text').length);
+         }
+      });
+      setContextMenu(null);
+   };
+
+   const applyLinePrefix = (prefix: string) => {
+      if (editingLineIndex === null) return;
+      const line = lines[editingLineIndex];
+      const stripped = line.replace(/^(#{1,6}\s|>\s|- |\d+\.\s)/, '');
+      const newLine = prefix + stripped;
+      handleLineChange(editingLineIndex, newLine);
+      requestAnimationFrame(() => {
+         if (lineInputRef.current) {
+            lineInputRef.current.focus();
+            lineInputRef.current.setSelectionRange(newLine.length, newLine.length);
+         }
+      });
+      setContextMenu(null);
+   };
+
+   // Close context menu on click outside
+   useEffect(() => {
+      if (!contextMenu) return;
+      const handleClick = () => setContextMenu(null);
+      window.addEventListener('click', handleClick);
+      return () => window.removeEventListener('click', handleClick);
+   }, [contextMenu]);
+
    const headings = useMemo(() => {
       return lines
          .map((line, index) => {
@@ -220,216 +264,275 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
    };
 
    return (
-      <div className="group/editor flex flex-col h-full" onKeyDown={(e) => {
-         if (e.ctrlKey && e.key === 's') {
-            e.preventDefault();
-            handleSave();
-         }
-      }}>
-         {/* Toolbar */}
-         <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
-            <div className="flex items-center gap-1">
-               {isDirty && (
-                  <span className="text-[10px] text-[var(--color-warning)]">Unsaved</span>
-               )}
-            </div>
-
-            <div className="flex items-center gap-1">
-               <Button variant="ghost" size="icon" onClick={togglePin} title={note.is_pinned ? 'Unpin' : 'Pin'}>
-                  {note.is_pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
-               </Button>
-               <Button variant="ghost" size="icon" onClick={toggleArchive} title={note.is_archived ? 'Unarchive' : 'Archive'}>
-                  <Archive className="h-4 w-4" />
-               </Button>
-               <Button variant="ghost" size="icon" onClick={handleSave} title="Save (Ctrl+S)">
-                  <Save className="h-4 w-4" />
-               </Button>
-               <Button variant="ghost" size="icon" onClick={() => onDelete(note.id)} title="Delete" className="text-[var(--color-danger)] hover:text-[var(--color-danger)]">
-                  <Trash2 className="h-4 w-4" />
-               </Button>
-            </div>
-         </div>
-
-         {/* Title */}
-         <div className="max-w-3xl mx-auto w-full px-8 pt-6 pb-2">
-            <Input
-               value={title}
-               onChange={(e) => handleTitleChange(e.target.value)}
-               placeholder="Note title..."
-               className="border-none bg-transparent text-2xl font-bold px-0 h-auto focus-visible:ring-0 text-center"
-            />
-         </div>
-
-         {/* Tags */}
-         <div className="max-w-3xl mx-auto w-full px-8 pb-3 flex items-center justify-center gap-2 flex-wrap">
-            {tags.map((tag) => (
-               <Badge key={tag} onClick={() => removeTag(tag)} className="cursor-pointer">
-                  {tag} ×
-               </Badge>
-            ))}
-            <input
-               value={tagInput}
-               onChange={(e) => setTagInput(e.target.value)}
-               onKeyDown={handleTagKeyDown}
-               placeholder="Add tag..."
-               className="text-xs bg-transparent border-none outline-none text-[var(--color-text-muted)] placeholder:text-[var(--color-text-muted)] w-20"
-            />
-         </div>
-
-         {/* Content area with TOC */}
-         <div className="flex-1 flex overflow-hidden relative">
-            {/* Content - Line-by-line live preview editor */}
-            <div
-               className="flex-1 overflow-y-auto px-8 py-4 outline-none"
-               tabIndex={0}
-               onKeyDown={(e) => {
-                  if (editingLineIndex === null && !selectAll && lines.length > 0) {
-                     if (e.key === 'ArrowDown') {
-                        e.preventDefault();
-                        setEditingLineIndex(0);
-                     } else if (e.key === 'ArrowUp') {
-                        e.preventDefault();
-                        setEditingLineIndex(lines.length - 1);
-                     }
-                  }
-               }}
-               onMouseDown={(e) => {
-                  if (e.target === e.currentTarget) {
-                     e.preventDefault();
-                     if (selectAll) {
-                        setSelectAll(false);
-                        setEditingLineIndex(null);
-                     } else {
-                        setEditingLineIndex(lines.length - 1);
-                     }
-                  }
-               }}
-            >
-               <div className="max-w-3xl mx-auto w-full" style={{ zoom: fontScale / 100 }}>
-                  {selectAll ? (
-                     <textarea
-                        ref={selectAllRef}
-                        value={content}
-                        onChange={(e) => {
-                           const newContent = e.target.value;
-                           setContent(newContent);
-                           handleAutoSave(title, newContent, tags);
-                        }}
-                        onBlur={() => setSelectAll(false)}
-                        onKeyDown={(e) => {
-                           if (e.key === 'Escape') {
-                              e.preventDefault();
-                              setSelectAll(false);
-                           }
-                        }}
-                        className="w-full h-full bg-transparent border-none outline-none font-[family-name:var(--font-mono)] text-[var(--color-text-primary)] leading-relaxed resize-none"
-                        style={{ fontSize: '1.006rem' }}
-                        spellCheck={false}
-                        autoComplete="off"
-                     />
-                  ) : content === '' && editingLineIndex === null ? (
-                     <div
-                        onMouseDown={(e) => {
-                           e.preventDefault();
-                           setEditingLineIndex(0);
-                        }}
-                        className="text-[var(--color-text-muted)] cursor-text italic py-0.5"
-                        style={{ fontSize: '1.006rem' }}
-                     >
-                        Click to start writing...
-                     </div>
-                  ) : (
-                     lines.map((line, index) =>
-                        editingLineIndex === index ? (
-                           <input
-                              key={index}
-                              ref={lineInputRef}
-                              type="text"
-                              value={line}
-                              onChange={(e) => handleLineChange(index, e.target.value)}
-                              onKeyDown={(e) => handleLineKeyDown(e, index)}
-                              onPaste={(e) => handleLinePaste(e, index)}
-                              onBlur={() => setEditingLineIndex(null)}
-                              className="w-full bg-transparent border-none outline-none font-[family-name:var(--font-mono)] text-[var(--color-text-primary)] py-0.5 block"
-                              style={{ fontSize: '1.006rem', lineHeight: '1.925' }}
-                              spellCheck={false}
-                              autoComplete="off"
-                           />
-                        ) : (
-                           <div
-                              key={index}
-                              ref={(el) => {
-                                 if (el) lineRefs.current.set(index, el);
-                                 else lineRefs.current.delete(index);
-                              }}
-                              onMouseDown={(e) => {
-                                 e.preventDefault();
-                                 setEditingLineIndex(index);
-                              }}
-                              className="cursor-text min-h-[1.5em]"
-                           >
-                              {line.trim() === '' ? (
-                                 <div className="h-[1.5em]" />
-                              ) : (
-                                 <div className="markdown-line">
-                                    <ReactMarkdown
-                                       remarkPlugins={[remarkGfm]}
-                                       rehypePlugins={[rehypeSanitize]}
-                                    >
-                                       {line}
-                                    </ReactMarkdown>
-                                 </div>
-                              )}
-                           </div>
-                        )
-                     )
+      <>
+         <div className="group/editor flex flex-col h-full" onKeyDown={(e) => {
+            if (e.ctrlKey && e.key === 's') {
+               e.preventDefault();
+               handleSave();
+            }
+         }}>
+            {/* Toolbar */}
+            <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
+               <div className="flex items-center gap-1">
+                  {isDirty && (
+                     <span className="text-[10px] text-[var(--color-warning)]">Unsaved</span>
                   )}
                </div>
-            </div>
 
-            {/* Zoom controls - right side (always visible) */}
-            <div className="absolute right-0 top-0 w-64 py-4 pr-3 pl-2">
                <div className="flex items-center gap-1">
-                  <button
-                     onClick={() => setFontScale(s => Math.max(50, s - 10))}
-                     className="p-1 rounded hover:bg-[var(--color-bg-hover)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
-                     title="Decrease font size"
-                  >
-                     <Minus className="h-3.5 w-3.5" />
-                  </button>
-                  <span className="text-[12px] text-[var(--color-text-muted)] w-8 text-center tabular-nums">{fontScale}%</span>
-                  <button
-                     onClick={() => setFontScale(s => Math.min(200, s + 10))}
-                     className="p-1 rounded hover:bg-[var(--color-bg-hover)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
-                     title="Increase font size"
-                  >
-                     <Plus className="h-3.5 w-3.5" />
-                  </button>
+                  <Button variant="ghost" size="icon" onClick={togglePin} title={note.is_pinned ? 'Unpin' : 'Pin'}>
+                     {note.is_pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={toggleArchive} title={note.is_archived ? 'Unarchive' : 'Archive'}>
+                     <Archive className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={handleSave} title="Save (Ctrl+S)">
+                     <Save className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => onDelete(note.id)} title="Delete" className="text-[var(--color-danger)] hover:text-[var(--color-danger)]">
+                     <Trash2 className="h-4 w-4" />
+                  </Button>
                </div>
             </div>
 
-            {/* Table of Contents - right side (overlay) */}
-            {headings.length > 0 && (
-               <div className="absolute right-0 top-10 bottom-0 w-64 overflow-y-auto py-4 pr-3 pl-2 opacity-0 group-hover/editor:opacity-100 transition-opacity duration-300 pointer-events-none group-hover/editor:pointer-events-auto">
-                  <span className="text-[12px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] block mb-2">
-                     On this page
-                  </span>
-                  <nav className="flex flex-col gap-0.5">
-                     {headings.map((h, i) => (
-                        <button
-                           key={`${h.lineIndex}-${i}`}
-                           onClick={() => scrollToHeading(h.lineIndex)}
-                           className="text-left text-[13px] py-0.5 text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors truncate cursor-pointer"
-                           style={{ paddingLeft: `${(h.level - 1) * 12}px` }}
-                           title={h.text}
+            {/* Title */}
+            <div className="max-w-3xl mx-auto w-full px-8 pt-6 pb-2">
+               <Input
+                  value={title}
+                  onChange={(e) => handleTitleChange(e.target.value)}
+                  placeholder="Note title..."
+                  className="border-none bg-transparent text-2xl font-bold px-0 h-auto focus-visible:ring-0 text-center"
+               />
+            </div>
+
+            {/* Tags */}
+            <div className="max-w-3xl mx-auto w-full px-8 pb-3 flex items-center justify-center gap-2 flex-wrap">
+               {tags.map((tag) => (
+                  <Badge key={tag} onClick={() => removeTag(tag)} className="cursor-pointer">
+                     {tag} ×
+                  </Badge>
+               ))}
+               <input
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={handleTagKeyDown}
+                  placeholder="Add tag..."
+                  className="text-xs bg-transparent border-none outline-none text-[var(--color-text-muted)] placeholder:text-[var(--color-text-muted)] w-20"
+               />
+            </div>
+
+            {/* Content area with TOC */}
+            <div className="flex-1 flex overflow-hidden relative">
+               {/* Content - Line-by-line live preview editor */}
+               <div
+                  className="flex-1 overflow-y-auto px-8 py-4 outline-none"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                     if (editingLineIndex === null && !selectAll && lines.length > 0) {
+                        if (e.key === 'ArrowDown') {
+                           e.preventDefault();
+                           setEditingLineIndex(0);
+                        } else if (e.key === 'ArrowUp') {
+                           e.preventDefault();
+                           setEditingLineIndex(lines.length - 1);
+                        }
+                     }
+                  }}
+                  onMouseDown={(e) => {
+                     if (e.target === e.currentTarget) {
+                        e.preventDefault();
+                        if (selectAll) {
+                           setSelectAll(false);
+                           setEditingLineIndex(null);
+                        } else {
+                           setEditingLineIndex(lines.length - 1);
+                        }
+                     }
+                  }}
+               >
+                  <div className="max-w-3xl mx-auto w-full" style={{ zoom: fontScale / 100 }}>
+                     {selectAll ? (
+                        <textarea
+                           ref={selectAllRef}
+                           value={content}
+                           onChange={(e) => {
+                              const newContent = e.target.value;
+                              setContent(newContent);
+                              handleAutoSave(title, newContent, tags);
+                           }}
+                           onBlur={() => setSelectAll(false)}
+                           onKeyDown={(e) => {
+                              if (e.key === 'Escape') {
+                                 e.preventDefault();
+                                 setSelectAll(false);
+                              }
+                           }}
+                           className="w-full h-full bg-transparent border-none outline-none font-[family-name:var(--font-mono)] text-[var(--color-text-primary)] leading-relaxed resize-none"
+                           style={{ fontSize: '1.006rem' }}
+                           spellCheck={false}
+                           autoComplete="off"
+                        />
+                     ) : content === '' && editingLineIndex === null ? (
+                        <div
+                           onMouseDown={(e) => {
+                              e.preventDefault();
+                              setEditingLineIndex(0);
+                           }}
+                           className="text-[var(--color-text-muted)] cursor-text italic py-0.5"
+                           style={{ fontSize: '1.006rem' }}
                         >
-                           {h.text}
-                        </button>
-                     ))}
-                  </nav>
+                           Click to start writing...
+                        </div>
+                     ) : (
+                        lines.map((line, index) =>
+                           editingLineIndex === index ? (
+                              <input
+                                 key={index}
+                                 ref={lineInputRef}
+                                 type="text"
+                                 value={line}
+                                 onChange={(e) => handleLineChange(index, e.target.value)}
+                                 onKeyDown={(e) => handleLineKeyDown(e, index)}
+                                 onPaste={(e) => handleLinePaste(e, index)}
+                                 onBlur={() => setEditingLineIndex(null)}
+                                 onContextMenu={(e) => {
+                                    const input = e.currentTarget;
+                                    if (input.selectionStart !== input.selectionEnd) {
+                                       e.preventDefault();
+                                       setContextMenu({ x: e.clientX, y: e.clientY, lineIndex: index });
+                                    }
+                                 }}
+                                 className="w-full bg-transparent border-none outline-none font-[family-name:var(--font-mono)] text-[var(--color-text-primary)] py-0.5 block"
+                                 style={{ fontSize: '1.006rem', lineHeight: '1.925' }}
+                                 spellCheck={false}
+                                 autoComplete="off"
+                              />
+                           ) : (
+                              <div
+                                 key={index}
+                                 ref={(el) => {
+                                    if (el) lineRefs.current.set(index, el);
+                                    else lineRefs.current.delete(index);
+                                 }}
+                                 onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    setEditingLineIndex(index);
+                                 }}
+                                 className="cursor-text min-h-[1.5em]"
+                              >
+                                 {line.trim() === '' ? (
+                                    <div className="h-[1.5em]" />
+                                 ) : (
+                                    <div className="markdown-line">
+                                       <ReactMarkdown
+                                          remarkPlugins={[remarkGfm]}
+                                          rehypePlugins={[rehypeSanitize]}
+                                       >
+                                          {line}
+                                       </ReactMarkdown>
+                                    </div>
+                                 )}
+                              </div>
+                           )
+                        )
+                     )}
+                  </div>
                </div>
-            )}
+
+               {/* Zoom controls - right side (always visible) */}
+               <div className="absolute right-0 top-0 w-64 py-4 pr-3 pl-2">
+                  <div className="flex items-center gap-1">
+                     <button
+                        onClick={() => setFontScale(s => Math.max(50, s - 10))}
+                        className="p-1 rounded hover:bg-[var(--color-bg-hover)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
+                        title="Decrease font size"
+                     >
+                        <Minus className="h-3.5 w-3.5" />
+                     </button>
+                     <span className="text-[12px] text-[var(--color-text-muted)] w-8 text-center tabular-nums">{fontScale}%</span>
+                     <button
+                        onClick={() => setFontScale(s => Math.min(200, s + 10))}
+                        className="p-1 rounded hover:bg-[var(--color-bg-hover)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
+                        title="Increase font size"
+                     >
+                        <Plus className="h-3.5 w-3.5" />
+                     </button>
+                  </div>
+               </div>
+
+               {/* Table of Contents - right side (overlay) */}
+               {headings.length > 0 && (
+                  <div className="absolute right-0 top-10 bottom-0 w-64 overflow-y-auto py-4 pr-3 pl-2 opacity-0 group-hover/editor:opacity-100 transition-opacity duration-300 pointer-events-none group-hover/editor:pointer-events-auto">
+                     <span className="text-[12px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] block mb-2">
+                        On this page
+                     </span>
+                     <nav className="flex flex-col gap-0.5">
+                        {headings.map((h, i) => (
+                           <button
+                              key={`${h.lineIndex}-${i}`}
+                              onClick={() => scrollToHeading(h.lineIndex)}
+                              className="text-left text-[13px] py-0.5 text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors truncate cursor-pointer"
+                              style={{ paddingLeft: `${(h.level - 1) * 12}px` }}
+                              title={h.text}
+                           >
+                              {h.text}
+                           </button>
+                        ))}
+                     </nav>
+                  </div>
+               )}
+            </div>
          </div>
-      </div>
+
+         {/* Context Menu */}
+         {contextMenu && (
+            <div
+               className="fixed z-50 bg-[var(--color-bg-secondary)] border border-[var(--color-border)] rounded-lg shadow-xl py-1 min-w-[180px]"
+               style={{ left: contextMenu.x, top: contextMenu.y }}
+               onMouseDown={(e) => e.preventDefault()}
+            >
+               <div className="px-2 py-1 text-[10px] uppercase tracking-wider text-[var(--color-text-muted)] font-semibold">
+                  Formatting
+               </div>
+               <button onClick={() => applyInlineFormat('**')} className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer">
+                  <Bold className="h-3.5 w-3.5" /> Bold
+               </button>
+               <button onClick={() => applyInlineFormat('*')} className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer">
+                  <Italic className="h-3.5 w-3.5" /> Italic
+               </button>
+               <button onClick={() => applyInlineFormat('~~')} className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer">
+                  <Strikethrough className="h-3.5 w-3.5" /> Strikethrough
+               </button>
+               <button onClick={() => applyInlineFormat('`')} className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer">
+                  <Code className="h-3.5 w-3.5" /> Code
+               </button>
+               <button onClick={() => applyInlineFormat('==')} className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer">
+                  <Highlighter className="h-3.5 w-3.5" /> Highlight
+               </button>
+               <div className="border-t border-[var(--color-border)] my-1" />
+               <div className="px-2 py-1 text-[10px] uppercase tracking-wider text-[var(--color-text-muted)] font-semibold">
+                  Block
+               </div>
+               <button onClick={() => applyLinePrefix('# ')} className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer">
+                  <Heading1 className="h-3.5 w-3.5" /> Heading 1
+               </button>
+               <button onClick={() => applyLinePrefix('## ')} className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer">
+                  <Heading2 className="h-3.5 w-3.5" /> Heading 2
+               </button>
+               <button onClick={() => applyLinePrefix('### ')} className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer">
+                  <Heading3 className="h-3.5 w-3.5" /> Heading 3
+               </button>
+               <button onClick={() => applyLinePrefix('- ')} className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer">
+                  <List className="h-3.5 w-3.5" /> Bullet List
+               </button>
+               <button onClick={() => applyLinePrefix('1. ')} className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer">
+                  <ListOrdered className="h-3.5 w-3.5" /> Numbered List
+               </button>
+               <button onClick={() => applyLinePrefix('> ')} className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer">
+                  <Quote className="h-3.5 w-3.5" /> Blockquote
+               </button>
+            </div>
+         )}
+      </>
    );
 }
