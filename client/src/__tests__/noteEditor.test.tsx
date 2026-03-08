@@ -231,4 +231,408 @@ describe('NoteEditor', () => {
       expect(screen.getByDisplayValue('Second')).toBeInTheDocument();
       expect(screen.getByText('## Different')).toBeInTheDocument();
    });
+
+   it('handles Backspace to merge lines', () => {
+      vi.useFakeTimers();
+      render(<NoteEditor note={makeNote({ content: 'line1\nline2' })} onSave={onSave} onDelete={onDelete} />);
+
+      // Click the second line to edit it
+      fireEvent.mouseDown(screen.getByText('line2'));
+      const lineInput = screen.getByDisplayValue('line2');
+
+      // Set cursor at beginning of line
+      Object.defineProperty(lineInput, 'selectionStart', { value: 0, writable: true });
+      Object.defineProperty(lineInput, 'selectionEnd', { value: 0, writable: true });
+      fireEvent.keyDown(lineInput, { key: 'Backspace' });
+
+      act(() => { vi.advanceTimersByTime(1600); });
+
+      expect(onSave).toHaveBeenCalledWith('note-1', {
+         title: 'Test Note',
+         content: 'line1line2',
+         tags: ['react'],
+      });
+   });
+
+   it('handles ArrowUp to navigate to previous line', () => {
+      render(<NoteEditor note={makeNote({ content: 'line1\nline2' })} onSave={onSave} onDelete={onDelete} />);
+
+      // Click the second line
+      fireEvent.mouseDown(screen.getByText('line2'));
+      const lineInput = screen.getByDisplayValue('line2');
+
+      Object.defineProperty(lineInput, 'selectionStart', { value: 0, writable: true });
+      fireEvent.keyDown(lineInput, { key: 'ArrowUp' });
+
+      // Now editing line1
+      expect(screen.getByDisplayValue('line1')).toBeInTheDocument();
+   });
+
+   it('handles ArrowDown to navigate to next line', () => {
+      render(<NoteEditor note={makeNote({ content: 'line1\nline2' })} onSave={onSave} onDelete={onDelete} />);
+
+      // Click the first line
+      fireEvent.mouseDown(screen.getByText('line1'));
+      const lineInput = screen.getByDisplayValue('line1');
+
+      Object.defineProperty(lineInput, 'selectionStart', { value: 0, writable: true });
+      fireEvent.keyDown(lineInput, { key: 'ArrowDown' });
+
+      // Now editing line2
+      expect(screen.getByDisplayValue('line2')).toBeInTheDocument();
+   });
+
+   it('handles Tab to insert spaces', () => {
+      vi.useFakeTimers();
+      render(<NoteEditor note={makeNote({ content: 'hello' })} onSave={onSave} onDelete={onDelete} />);
+
+      fireEvent.mouseDown(screen.getByText('hello'));
+      const lineInput = screen.getByDisplayValue('hello');
+
+      Object.defineProperty(lineInput, 'selectionStart', { value: 0, writable: true });
+      fireEvent.keyDown(lineInput, { key: 'Tab' });
+
+      act(() => { vi.advanceTimersByTime(1600); });
+
+      expect(onSave).toHaveBeenCalledWith('note-1', {
+         title: 'Test Note',
+         content: '  hello',
+         tags: ['react'],
+      });
+   });
+
+   it('handles Ctrl+A to enter selectAll mode', () => {
+      render(<NoteEditor note={makeNote({ content: 'line1\nline2' })} onSave={onSave} onDelete={onDelete} />);
+
+      // Click a line to edit
+      fireEvent.mouseDown(screen.getByText('line1'));
+      const lineInput = screen.getByDisplayValue('line1');
+
+      fireEvent.keyDown(lineInput, { key: 'a', ctrlKey: true });
+
+      // Should now show a textarea (select-all mode)
+      const textareas = document.querySelectorAll('textarea');
+      expect(textareas.length).toBe(1);
+      expect(textareas[0].value).toBe('line1\nline2');
+   });
+
+   it('shows placeholder when content is empty', () => {
+      render(<NoteEditor note={makeNote({ content: '' })} onSave={onSave} onDelete={onDelete} />);
+      expect(screen.getByText('Click to start writing...')).toBeInTheDocument();
+   });
+
+   it('activates editing when clicking empty content placeholder', () => {
+      render(<NoteEditor note={makeNote({ content: '' })} onSave={onSave} onDelete={onDelete} />);
+      fireEvent.mouseDown(screen.getByText('Click to start writing...'));
+
+      // Should now have an editing input visible (in addition to title and tag inputs)
+      const inputs = screen.getAllByRole('textbox');
+      // Title input + tag input + line editing input = 3
+      expect(inputs.length).toBeGreaterThanOrEqual(3);
+   });
+
+   it('renders zoom controls', () => {
+      render(<NoteEditor note={makeNote()} onSave={onSave} onDelete={onDelete} />);
+      expect(screen.getByText('100%')).toBeInTheDocument();
+      expect(screen.getByTitle('Decrease font size')).toBeInTheDocument();
+      expect(screen.getByTitle('Increase font size')).toBeInTheDocument();
+   });
+
+   it('increases zoom when + button clicked', async () => {
+      const user = userEvent.setup();
+      render(<NoteEditor note={makeNote()} onSave={onSave} onDelete={onDelete} />);
+      await user.click(screen.getByTitle('Increase font size'));
+      expect(screen.getByText('110%')).toBeInTheDocument();
+   });
+
+   it('decreases zoom when - button clicked', async () => {
+      const user = userEvent.setup();
+      render(<NoteEditor note={makeNote()} onSave={onSave} onDelete={onDelete} />);
+      await user.click(screen.getByTitle('Decrease font size'));
+      expect(screen.getByText('90%')).toBeInTheDocument();
+   });
+
+   it('saves on Ctrl+S keyboard shortcut', () => {
+      render(<NoteEditor note={makeNote()} onSave={onSave} onDelete={onDelete} />);
+      const editor = screen.getByDisplayValue('Test Note').closest('.group\\/editor')!;
+      fireEvent.keyDown(editor, { key: 's', ctrlKey: true });
+      expect(onSave).toHaveBeenCalledWith('note-1', {
+         title: 'Test Note',
+         content: '# Hello World',
+         tags: ['react'],
+      });
+   });
+
+   it('adds a tag on Enter', () => {
+      vi.useFakeTimers();
+      render(<NoteEditor note={makeNote()} onSave={onSave} onDelete={onDelete} />);
+      const tagInput = screen.getByPlaceholderText('Add tag...');
+      fireEvent.change(tagInput, { target: { value: 'newtag' } });
+      fireEvent.keyDown(tagInput, { key: 'Enter' });
+
+      act(() => { vi.advanceTimersByTime(1600); });
+
+      const lastCall = onSave.mock.calls[onSave.mock.calls.length - 1];
+      expect(lastCall[1].tags).toContain('newtag');
+   });
+
+   it('does not add duplicate tag', () => {
+      vi.useFakeTimers();
+      render(<NoteEditor note={makeNote()} onSave={onSave} onDelete={onDelete} />);
+      const tagInput = screen.getByPlaceholderText('Add tag...');
+      fireEvent.change(tagInput, { target: { value: 'react' } });
+      fireEvent.keyDown(tagInput, { key: 'Enter' });
+
+      act(() => { vi.advanceTimersByTime(1600); });
+
+      // Should not have triggered auto-save for duplicate tag
+      expect(onSave).not.toHaveBeenCalled();
+   });
+
+   it('renders table of contents for headings', () => {
+      render(<NoteEditor note={makeNote({ content: '# Title\n## Subtitle' })} onSave={onSave} onDelete={onDelete} />);
+      expect(screen.getByText('On this page')).toBeInTheDocument();
+      expect(screen.getByText('Title')).toBeInTheDocument();
+      expect(screen.getByText('Subtitle')).toBeInTheDocument();
+   });
+
+   it('handles multi-line paste', () => {
+      vi.useFakeTimers();
+      render(<NoteEditor note={makeNote({ content: 'hello' })} onSave={onSave} onDelete={onDelete} />);
+
+      // Click line to edit
+      fireEvent.mouseDown(screen.getByText('hello'));
+      const lineInput = screen.getByDisplayValue('hello');
+
+      // Set selection start/end
+      Object.defineProperty(lineInput, 'selectionStart', { value: 5, writable: true });
+      Object.defineProperty(lineInput, 'selectionEnd', { value: 5, writable: true });
+
+      fireEvent.paste(lineInput, {
+         clipboardData: { getData: () => 'line1\nline2\nline3' },
+      });
+
+      act(() => { vi.advanceTimersByTime(1600); });
+
+      expect(onSave).toHaveBeenCalledWith('note-1', {
+         title: 'Test Note',
+         content: 'helloline1\nline2\nline3',
+         tags: ['react'],
+      });
+   });
+
+   it('opens context menu on right-click with selection', () => {
+      render(<NoteEditor note={makeNote({ content: 'some text here' })} onSave={onSave} onDelete={onDelete} />);
+      fireEvent.mouseDown(screen.getByText('some text here'));
+      const lineInput = screen.getByDisplayValue('some text here');
+
+      // Set selection to simulate text selection
+      Object.defineProperty(lineInput, 'selectionStart', { value: 0, writable: true });
+      Object.defineProperty(lineInput, 'selectionEnd', { value: 4, writable: true });
+
+      fireEvent.contextMenu(lineInput, { clientX: 100, clientY: 200 });
+
+      // Context menu should appear with formatting options
+      expect(screen.getByText('Bold')).toBeInTheDocument();
+      expect(screen.getByText('Italic')).toBeInTheDocument();
+   });
+
+   it('does not open context menu when no selection', () => {
+      render(<NoteEditor note={makeNote({ content: 'some text' })} onSave={onSave} onDelete={onDelete} />);
+      fireEvent.mouseDown(screen.getByText('some text'));
+      const lineInput = screen.getByDisplayValue('some text');
+
+      // No selection (start === end)
+      Object.defineProperty(lineInput, 'selectionStart', { value: 3, writable: true });
+      Object.defineProperty(lineInput, 'selectionEnd', { value: 3, writable: true });
+
+      fireEvent.contextMenu(lineInput, { clientX: 100, clientY: 200 });
+
+      expect(screen.queryByText('Bold')).not.toBeInTheDocument();
+   });
+
+   it('applies inline format (bold) from context menu', () => {
+      vi.useFakeTimers();
+      render(<NoteEditor note={makeNote({ content: 'hello world' })} onSave={onSave} onDelete={onDelete} />);
+      fireEvent.mouseDown(screen.getByText('hello world'));
+      const lineInput = screen.getByDisplayValue('hello world');
+
+      Object.defineProperty(lineInput, 'selectionStart', { value: 0, writable: true });
+      Object.defineProperty(lineInput, 'selectionEnd', { value: 5, writable: true });
+
+      fireEvent.contextMenu(lineInput, { clientX: 100, clientY: 200 });
+      fireEvent.click(screen.getByText('Bold'));
+
+      act(() => { vi.advanceTimersByTime(1600); });
+
+      expect(onSave).toHaveBeenCalledWith('note-1', {
+         title: 'Test Note',
+         content: '**hello** world',
+         tags: ['react'],
+      });
+   });
+
+   it('applies line prefix (heading) from context menu', () => {
+      vi.useFakeTimers();
+      render(<NoteEditor note={makeNote({ content: 'some text' })} onSave={onSave} onDelete={onDelete} />);
+      fireEvent.mouseDown(screen.getByText('some text'));
+      const lineInput = screen.getByDisplayValue('some text');
+
+      Object.defineProperty(lineInput, 'selectionStart', { value: 0, writable: true });
+      Object.defineProperty(lineInput, 'selectionEnd', { value: 4, writable: true });
+
+      fireEvent.contextMenu(lineInput, { clientX: 100, clientY: 200 });
+      fireEvent.click(screen.getByText('Heading 1'));
+
+      act(() => { vi.advanceTimersByTime(1600); });
+
+      expect(onSave).toHaveBeenCalledWith('note-1', {
+         title: 'Test Note',
+         content: '# some text',
+         tags: ['react'],
+      });
+   });
+
+   it('closes context menu on window click', () => {
+      render(<NoteEditor note={makeNote({ content: 'text' })} onSave={onSave} onDelete={onDelete} />);
+      fireEvent.mouseDown(screen.getByText('text'));
+      const lineInput = screen.getByDisplayValue('text');
+
+      Object.defineProperty(lineInput, 'selectionStart', { value: 0, writable: true });
+      Object.defineProperty(lineInput, 'selectionEnd', { value: 4, writable: true });
+
+      fireEvent.contextMenu(lineInput, { clientX: 100, clientY: 200 });
+      expect(screen.getByText('Bold')).toBeInTheDocument();
+
+      fireEvent.click(window);
+      expect(screen.queryByText('Bold')).not.toBeInTheDocument();
+   });
+
+   it('clicks on content area background to activate last line', () => {
+      render(<NoteEditor note={makeNote({ content: 'line1\nline2' })} onSave={onSave} onDelete={onDelete} />);
+
+      // Get the scrollable content area (the div with tabIndex=0)
+      const contentArea = document.querySelector('[tabindex="0"]')!;
+
+      // MouseDown on the container itself (not a child)
+      fireEvent.mouseDown(contentArea, { target: contentArea, currentTarget: contentArea });
+
+      // Should activate line editing for last line
+      expect(screen.getByDisplayValue('line2')).toBeInTheDocument();
+   });
+
+   it('navigates to first line with ArrowDown when no line is editing', () => {
+      render(<NoteEditor note={makeNote({ content: 'line1\nline2' })} onSave={onSave} onDelete={onDelete} />);
+
+      const contentArea = document.querySelector('[tabindex="0"]')!;
+      fireEvent.keyDown(contentArea, { key: 'ArrowDown' });
+
+      // Should activate first line
+      expect(screen.getByDisplayValue('line1')).toBeInTheDocument();
+   });
+
+   it('navigates to last line with ArrowUp when no line is editing', () => {
+      render(<NoteEditor note={makeNote({ content: 'line1\nline2' })} onSave={onSave} onDelete={onDelete} />);
+
+      const contentArea = document.querySelector('[tabindex="0"]')!;
+      fireEvent.keyDown(contentArea, { key: 'ArrowUp' });
+
+      // Should activate last line
+      expect(screen.getByDisplayValue('line2')).toBeInTheDocument();
+   });
+
+   it('editing selectAll textarea and pressing Escape exits select-all mode', () => {
+      render(<NoteEditor note={makeNote({ content: 'line1\nline2' })} onSave={onSave} onDelete={onDelete} />);
+
+      // Enter editing then ctrl+a
+      fireEvent.mouseDown(screen.getByText('line1'));
+      const lineInput = screen.getByDisplayValue('line1');
+      fireEvent.keyDown(lineInput, { key: 'a', ctrlKey: true });
+
+      // Should have textarea
+      const textarea = document.querySelector('textarea')!;
+      expect(textarea).toBeInTheDocument();
+
+      // Press Escape to exit select-all mode
+      fireEvent.keyDown(textarea, { key: 'Escape' });
+
+      // Should no longer have textarea
+      expect(document.querySelector('textarea')).not.toBeInTheDocument();
+   });
+
+   it('editing selectAll textarea and changing content triggers auto-save', () => {
+      vi.useFakeTimers();
+      render(<NoteEditor note={makeNote({ content: 'line1' })} onSave={onSave} onDelete={onDelete} />);
+
+      // Enter editing then ctrl+a
+      fireEvent.mouseDown(screen.getByText('line1'));
+      const lineInput = screen.getByDisplayValue('line1');
+      fireEvent.keyDown(lineInput, { key: 'a', ctrlKey: true });
+
+      const textarea = document.querySelector('textarea')!;
+      fireEvent.change(textarea, { target: { value: 'changed content' } });
+
+      act(() => { vi.advanceTimersByTime(1600); });
+
+      expect(onSave).toHaveBeenCalledWith('note-1', {
+         title: 'Test Note',
+         content: 'changed content',
+         tags: ['react'],
+      });
+   });
+
+   it('clicks canvas to dismiss select-all', () => {
+      render(<NoteEditor note={makeNote({ content: 'line1' })} onSave={onSave} onDelete={onDelete} />);
+
+      // Enter select-all mode
+      fireEvent.mouseDown(screen.getByText('line1'));
+      const lineInput = screen.getByDisplayValue('line1');
+      fireEvent.keyDown(lineInput, { key: 'a', ctrlKey: true });
+
+      expect(document.querySelector('textarea')).toBeInTheDocument();
+
+      // Click on the content area background
+      const contentArea = document.querySelector('[tabindex="0"]')!;
+      fireEvent.mouseDown(contentArea, { target: contentArea, currentTarget: contentArea });
+
+      // Should dismiss select-all
+      expect(document.querySelector('textarea')).not.toBeInTheDocument();
+   });
+
+   it('clicks TOC heading to scroll and activate line', () => {
+      // Mock scrollIntoView which is not available in jsdom
+      Element.prototype.scrollIntoView = vi.fn();
+      render(<NoteEditor note={makeNote({ content: '# Title\nSome text\n## Section' })} onSave={onSave} onDelete={onDelete} />);
+
+      const tocEntry = screen.getByText('Section');
+      fireEvent.click(tocEntry);
+
+      // Should activate line editing for the heading line (index 2)
+      expect(screen.getByDisplayValue('## Section')).toBeInTheDocument();
+   });
+
+   it('exits selectAll mode on textarea blur', () => {
+      render(<NoteEditor note={makeNote({ content: 'line1' })} onSave={onSave} onDelete={onDelete} />);
+
+      // Enter editing then ctrl+a
+      fireEvent.mouseDown(screen.getByText('line1'));
+      const lineInput = screen.getByDisplayValue('line1');
+      fireEvent.keyDown(lineInput, { key: 'a', ctrlKey: true });
+
+      const textarea = document.querySelector('textarea')!;
+      expect(textarea).toBeInTheDocument();
+
+      // Blur the textarea
+      fireEvent.blur(textarea);
+
+      // Should exit selectAll mode
+      expect(document.querySelector('textarea')).not.toBeInTheDocument();
+   });
+
+   it('renders blank lines as empty divs', () => {
+      const { container } = render(<NoteEditor note={makeNote({ content: 'line1\n\nline3' })} onSave={onSave} onDelete={onDelete} />);
+      // The blank line should render as an empty div with specific height
+      const emptyDivs = container.querySelectorAll('.h-\\[1\\.5em\\]');
+      expect(emptyDivs.length).toBeGreaterThanOrEqual(1);
+   });
 });

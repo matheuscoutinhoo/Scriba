@@ -1,5 +1,5 @@
 import { createApp } from './app.js';
-import { getDatabase, initializeSchema, execute, queryOne } from './database/index.js';
+import { getDatabase, initializeSchema, execute, queryOne } from './database/connection.js';
 import { DEFAULT_USER_ID } from './lib/constants.js';
 
 const PORT = process.env.PORT || 3001;

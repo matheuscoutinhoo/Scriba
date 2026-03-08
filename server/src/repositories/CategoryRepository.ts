@@ -2,11 +2,10 @@ import { v4 as uuidv4 } from 'uuid';
 import type { Database } from '../database/connection.js';
 import { queryAll, queryOne, execute } from '../database/connection.js';
 import type { Category, CategoryWithCount, CreateCategoryDTO, UpdateCategoryDTO } from '../models/types.js';
-import type { ICategoryRepository } from './ICategoryRepository.js';
 import { slugify } from '../lib/utils.js';
 import { DEFAULT_CATEGORY_COLOR } from '../lib/constants.js';
 
-export class CategoryRepository implements ICategoryRepository {
+export class CategoryRepository {
    constructor(private db: Database) { }
 
    findAllByUser(userId: string): CategoryWithCount[] {

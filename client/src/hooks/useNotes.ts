@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { notesApi } from '@/lib/api';
-import type { CreateNotePayload, UpdateNotePayload } from '@/lib/types';
+import type { CreateNotePayload, UpdateNotePayload, Note } from '@/lib/types';
 
 export function useNotes(params?: { archived?: boolean; category_id?: string }, options?: { enabled?: boolean }) {
    return useQuery({
@@ -26,6 +26,7 @@ export function useCreateNote() {
       mutationFn: (payload: CreateNotePayload) => notesApi.create(payload),
       onSuccess: () => {
          queryClient.invalidateQueries({ queryKey: ['notes'] });
+         queryClient.invalidateQueries({ queryKey: ['categories'] });
       },
    });
 }
@@ -35,8 +36,31 @@ export function useUpdateNote() {
    return useMutation({
       mutationFn: ({ id, ...payload }: UpdateNotePayload & { id: string }) =>
          notesApi.update(id, payload),
-      onSuccess: () => {
+      onMutate: async ({ id, ...payload }) => {
+         await queryClient.cancelQueries({ queryKey: ['notes'] });
+         const queries = queryClient.getQueriesData<{ data: Note[] }>({ queryKey: ['notes'] });
+         for (const [key, cached] of queries) {
+            if (cached && Array.isArray(cached.data)) {
+               queryClient.setQueryData(key, {
+                  ...cached,
+                  data: cached.data.map((n: Note) =>
+                     n.id === id ? { ...n, ...payload } : n
+                  ),
+               });
+            }
+         }
+         return { queries };
+      },
+      onError: (_err, _vars, context) => {
+         if (context?.queries) {
+            for (const [key, data] of context.queries) {
+               queryClient.setQueryData(key, data);
+            }
+         }
+      },
+      onSettled: () => {
          queryClient.invalidateQueries({ queryKey: ['notes'] });
+         queryClient.invalidateQueries({ queryKey: ['categories'] });
       },
    });
 }
@@ -47,6 +71,7 @@ export function useDeleteNote() {
       mutationFn: (id: string) => notesApi.delete(id),
       onSuccess: () => {
          queryClient.invalidateQueries({ queryKey: ['notes'] });
+         queryClient.invalidateQueries({ queryKey: ['categories'] });
       },
    });
 }

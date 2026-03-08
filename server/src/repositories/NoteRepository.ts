@@ -2,11 +2,10 @@ import { v4 as uuidv4 } from 'uuid';
 import type { Database } from '../database/connection.js';
 import { queryAll, queryOne, execute } from '../database/connection.js';
 import type { Note, NoteWithTags, Tag, CreateNoteDTO, UpdateNoteDTO } from '../models/types.js';
-import type { INoteRepository } from './INoteRepository.js';
 import { slugify, escapeLikePattern } from '../lib/utils.js';
 import { MAX_EXCERPT_LENGTH, DEFAULT_SEARCH_LIMIT } from '../lib/constants.js';
 
-export class NoteRepository implements INoteRepository {
+export class NoteRepository {
    constructor(private db: Database) { }
 
    findAllByUser(userId: string, options?: { archived?: boolean; categoryId?: string }): NoteWithTags[] {

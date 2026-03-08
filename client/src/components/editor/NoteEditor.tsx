@@ -1,11 +1,13 @@
-import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+﻿import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeSanitize from 'rehype-sanitize';
-import { Pin, PinOff, Trash2, Archive, Save, Plus, Minus, Bold, Italic, Underline, Strikethrough, Code, Highlighter, Heading1, Heading2, Heading3, List, ListOrdered, Quote } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+import { Plus, Minus } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
+import { EditorToolbar } from './EditorToolbar';
+import { EditorContextMenu } from './EditorContextMenu';
+import { useAutoSave } from '@/hooks/useAutoSave';
 import type { Note, UpdateNotePayload } from '@/lib/types';
 
 interface NoteEditorProps {
@@ -21,24 +23,15 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
    const [tags, setTags] = useState<string[]>((note.tags ?? []).map(t => t.name));
    const [editingLineIndex, setEditingLineIndex] = useState<number | null>(null);
    const [selectAll, setSelectAll] = useState(false);
-   const [isDirty, setIsDirty] = useState(false);
    const [fontScale, setFontScale] = useState(100);
    const [contextMenu, setContextMenu] = useState<{ x: number; y: number; lineIndex: number } | null>(null);
    const lineInputRef = useRef<HTMLInputElement>(null);
    const selectAllRef = useRef<HTMLTextAreaElement>(null);
-   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
    const pendingCursorRef = useRef<number | null>(null);
 
+   const { isDirty, save, scheduleAutoSave, resetDirty } = useAutoSave(note.id, onSave);
    const lines = content.split('\n');
 
-   // Cleanup auto-save timer on unmount
-   useEffect(() => {
-      return () => {
-         if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-      };
-   }, []);
-
-   // Focus and select all text when selectAll mode is activated
    useEffect(() => {
       if (selectAll && selectAllRef.current) {
          selectAllRef.current.focus();
@@ -46,17 +39,15 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
       }
    }, [selectAll]);
 
-   // Reset state when note changes
    useEffect(() => {
       setTitle(note.title);
       setContent(note.content);
       setTags(note.tags.map(t => t.name));
-      setIsDirty(false);
+      resetDirty();
       setEditingLineIndex(null);
       setSelectAll(false);
-   }, [note.id, note.title, note.content, note.tags]);
+   }, [note.id, note.title, note.content, note.tags, resetDirty]);
 
-   // Focus line input when editing line changes
    useEffect(() => {
       if (editingLineIndex !== null && lineInputRef.current) {
          lineInputRef.current.focus();
@@ -68,22 +59,12 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
    }, [editingLineIndex]);
 
    const handleSave = useCallback(() => {
-      onSave(note.id, { title, content, tags });
-      setIsDirty(false);
-   }, [note.id, title, content, tags, onSave]);
-
-   const handleAutoSave = useCallback((newTitle: string, newContent: string, newTags: string[]) => {
-      setIsDirty(true);
-      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-      saveTimeoutRef.current = setTimeout(() => {
-         onSave(note.id, { title: newTitle, content: newContent, tags: newTags });
-         setIsDirty(false);
-      }, 1500);
-   }, [note.id, onSave]);
+      save(title, content, tags);
+   }, [title, content, tags, save]);
 
    const handleTitleChange = (value: string) => {
       setTitle(value);
-      handleAutoSave(value, content, tags);
+      scheduleAutoSave(value, content, tags);
    };
 
    const handleTagKeyDown = (e: React.KeyboardEvent) => {
@@ -93,7 +74,7 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
          if (!tags.includes(newTag)) {
             const newTags = [...tags, newTag];
             setTags(newTags);
-            handleAutoSave(title, content, newTags);
+            scheduleAutoSave(title, content, newTags);
          }
          setTagInput('');
       }
@@ -102,23 +83,18 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
    const removeTag = (tag: string) => {
       const newTags = tags.filter(t => t !== tag);
       setTags(newTags);
-      handleAutoSave(title, content, newTags);
+      scheduleAutoSave(title, content, newTags);
    };
 
-   const togglePin = () => {
-      onSave(note.id, { is_pinned: !note.is_pinned });
-   };
-
-   const toggleArchive = () => {
-      onSave(note.id, { is_archived: !note.is_archived });
-   };
+   const togglePin = () => onSave(note.id, { is_pinned: !note.is_pinned });
+   const toggleArchive = () => onSave(note.id, { is_archived: !note.is_archived });
 
    const handleLineChange = (index: number, value: string) => {
       const newLines = [...lines];
       newLines[index] = value;
       const newContent = newLines.join('\n');
       setContent(newContent);
-      handleAutoSave(title, newContent, tags);
+      scheduleAutoSave(title, newContent, tags);
    };
 
    const handleLinePaste = (e: React.ClipboardEvent, index: number) => {
@@ -135,7 +111,7 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
       newLines.splice(index, 1, ...pastedLines);
       const newContent = newLines.join('\n');
       setContent(newContent);
-      handleAutoSave(title, newContent, tags);
+      scheduleAutoSave(title, newContent, tags);
       const lastPastedLine = pastedLines[pastedLines.length - 1];
       pendingCursorRef.current = lastPastedLine.length - currentLine.substring(end).length;
       setEditingLineIndex(index + pastedLines.length - 1);
@@ -155,7 +131,7 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
             newLines.splice(index, 1, before, after);
             const newContent = newLines.join('\n');
             setContent(newContent);
-            handleAutoSave(title, newContent, tags);
+            scheduleAutoSave(title, newContent, tags);
             pendingCursorRef.current = 0;
             setEditingLineIndex(index + 1);
          }
@@ -168,7 +144,7 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
             newLines.splice(index, 1);
             const newContent = newLines.join('\n');
             setContent(newContent);
-            handleAutoSave(title, newContent, tags);
+            scheduleAutoSave(title, newContent, tags);
             pendingCursorRef.current = prevLineLen;
             setEditingLineIndex(index - 1);
          }
@@ -209,7 +185,6 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
       const selected = line.substring(start, end);
       const newLine = line.substring(0, start) + wrapper + (selected || 'text') + wrapper + line.substring(end);
       handleLineChange(editingLineIndex, newLine);
-      const newCursorPos = start + wrapper.length + (selected || 'text').length + wrapper.length;
       requestAnimationFrame(() => {
          if (lineInputRef.current) {
             lineInputRef.current.focus();
@@ -235,7 +210,6 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
       setContextMenu(null);
    };
 
-   // Close context menu on click outside
    useEffect(() => {
       if (!contextMenu) return;
       const handleClick = () => setContextMenu(null);
@@ -248,7 +222,7 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
          .map((line, index) => {
             const match = line.match(/^(#{1,6})\s+(.+)/);
             if (!match) return null;
-            return { level: match[1].length, text: match[2].replace(/[*_`~\[\]]/g, ''), lineIndex: index };
+            return { level: match[1].length, text: match[2].replace(/[*_~\[\]]/g, ''), lineIndex: index };
          })
          .filter((h): h is { level: number; text: string; lineIndex: number } => h !== null);
    }, [lines]);
@@ -257,9 +231,7 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
 
    const scrollToHeading = (lineIndex: number) => {
       const el = lineRefs.current.get(lineIndex);
-      if (el) {
-         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       setEditingLineIndex(lineIndex);
    };
 
@@ -271,29 +243,15 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
                handleSave();
             }
          }}>
-            {/* Toolbar */}
-            <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
-               <div className="flex items-center gap-1">
-                  {isDirty && (
-                     <span className="text-[10px] text-[var(--color-warning)]">Unsaved</span>
-                  )}
-               </div>
-
-               <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="icon" onClick={togglePin} title={note.is_pinned ? 'Unpin' : 'Pin'}>
-                     {note.is_pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={toggleArchive} title={note.is_archived ? 'Unarchive' : 'Archive'}>
-                     <Archive className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={handleSave} title="Save (Ctrl+S)">
-                     <Save className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => onDelete(note.id)} title="Delete" className="text-[var(--color-danger)] hover:text-[var(--color-danger)]">
-                     <Trash2 className="h-4 w-4" />
-                  </Button>
-               </div>
-            </div>
+            <EditorToolbar
+               isDirty={isDirty}
+               isPinned={!!note.is_pinned}
+               isArchived={!!note.is_archived}
+               onTogglePin={togglePin}
+               onToggleArchive={toggleArchive}
+               onSave={handleSave}
+               onDelete={() => onDelete(note.id)}
+            />
 
             {/* Title */}
             <div className="max-w-3xl mx-auto w-full px-8 pt-6 pb-2">
@@ -323,7 +281,6 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
 
             {/* Content area with TOC */}
             <div className="flex-1 flex overflow-hidden relative">
-               {/* Content - Line-by-line live preview editor */}
                <div
                   className="flex-1 overflow-y-auto px-8 py-4 outline-none"
                   tabIndex={0}
@@ -358,7 +315,7 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
                            onChange={(e) => {
                               const newContent = e.target.value;
                               setContent(newContent);
-                              handleAutoSave(title, newContent, tags);
+                              scheduleAutoSave(title, newContent, tags);
                            }}
                            onBlur={() => setSelectAll(false)}
                            onKeyDown={(e) => {
@@ -439,7 +396,7 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
                   </div>
                </div>
 
-               {/* Zoom controls - right side (always visible) */}
+               {/* Zoom controls */}
                <div className="absolute right-0 top-0 w-64 py-4 pr-3 pl-2">
                   <div className="flex items-center gap-1">
                      <button
@@ -460,7 +417,7 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
                   </div>
                </div>
 
-               {/* Table of Contents - right side (overlay) */}
+               {/* Table of Contents */}
                {headings.length > 0 && (
                   <div className="absolute right-0 top-10 bottom-0 w-64 overflow-y-auto py-4 pr-3 pl-2 opacity-0 group-hover/editor:opacity-100 transition-opacity duration-300 pointer-events-none group-hover/editor:pointer-events-auto">
                      <span className="text-[12px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] block mb-2">
@@ -484,54 +441,13 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
             </div>
          </div>
 
-         {/* Context Menu */}
          {contextMenu && (
-            <div
-               className="fixed z-50 bg-[var(--color-bg-secondary)] border border-[var(--color-border)] rounded-lg shadow-xl py-1 min-w-[180px]"
-               style={{ left: contextMenu.x, top: contextMenu.y }}
-               onMouseDown={(e) => e.preventDefault()}
-            >
-               <div className="px-2 py-1 text-[10px] uppercase tracking-wider text-[var(--color-text-muted)] font-semibold">
-                  Formatting
-               </div>
-               <button onClick={() => applyInlineFormat('**')} className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer">
-                  <Bold className="h-3.5 w-3.5" /> Bold
-               </button>
-               <button onClick={() => applyInlineFormat('*')} className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer">
-                  <Italic className="h-3.5 w-3.5" /> Italic
-               </button>
-               <button onClick={() => applyInlineFormat('~~')} className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer">
-                  <Strikethrough className="h-3.5 w-3.5" /> Strikethrough
-               </button>
-               <button onClick={() => applyInlineFormat('`')} className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer">
-                  <Code className="h-3.5 w-3.5" /> Code
-               </button>
-               <button onClick={() => applyInlineFormat('==')} className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer">
-                  <Highlighter className="h-3.5 w-3.5" /> Highlight
-               </button>
-               <div className="border-t border-[var(--color-border)] my-1" />
-               <div className="px-2 py-1 text-[10px] uppercase tracking-wider text-[var(--color-text-muted)] font-semibold">
-                  Block
-               </div>
-               <button onClick={() => applyLinePrefix('# ')} className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer">
-                  <Heading1 className="h-3.5 w-3.5" /> Heading 1
-               </button>
-               <button onClick={() => applyLinePrefix('## ')} className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer">
-                  <Heading2 className="h-3.5 w-3.5" /> Heading 2
-               </button>
-               <button onClick={() => applyLinePrefix('### ')} className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer">
-                  <Heading3 className="h-3.5 w-3.5" /> Heading 3
-               </button>
-               <button onClick={() => applyLinePrefix('- ')} className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer">
-                  <List className="h-3.5 w-3.5" /> Bullet List
-               </button>
-               <button onClick={() => applyLinePrefix('1. ')} className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer">
-                  <ListOrdered className="h-3.5 w-3.5" /> Numbered List
-               </button>
-               <button onClick={() => applyLinePrefix('> ')} className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer">
-                  <Quote className="h-3.5 w-3.5" /> Blockquote
-               </button>
-            </div>
+            <EditorContextMenu
+               x={contextMenu.x}
+               y={contextMenu.y}
+               onApplyInlineFormat={applyInlineFormat}
+               onApplyLinePrefix={applyLinePrefix}
+            />
          )}
       </>
    );

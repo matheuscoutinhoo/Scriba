@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import type { Database } from '../database/connection.js';
 import { NoteController } from '../controllers/NoteController.js';
-import { NoteService } from '../services/NoteService.js';
 import { NoteRepository } from '../repositories/NoteRepository.js';
 import { validateBody, validateQuery } from '../middleware/validation.js';
 import { createNoteSchema, updateNoteSchema, searchSchema, notesQuerySchema } from '../models/validation.js';
@@ -9,8 +8,7 @@ import { createNoteSchema, updateNoteSchema, searchSchema, notesQuerySchema } fr
 export function createNoteRoutes(db: Database): Router {
    const router = Router();
    const repository = new NoteRepository(db);
-   const service = new NoteService(repository);
-   const controller = new NoteController(service);
+   const controller = new NoteController(repository);
 
    router.get('/search', validateQuery(searchSchema), controller.search);
    router.get('/', validateQuery(notesQuerySchema), controller.getAll);

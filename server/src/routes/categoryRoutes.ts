@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import type { Database } from '../database/connection.js';
 import { CategoryController } from '../controllers/CategoryController.js';
-import { CategoryService } from '../services/CategoryService.js';
 import { CategoryRepository } from '../repositories/CategoryRepository.js';
 import { validateBody } from '../middleware/validation.js';
 import { createCategorySchema, updateCategorySchema } from '../models/validation.js';
@@ -9,8 +8,7 @@ import { createCategorySchema, updateCategorySchema } from '../models/validation
 export function createCategoryRoutes(db: Database): Router {
    const router = Router();
    const repository = new CategoryRepository(db);
-   const service = new CategoryService(repository);
-   const controller = new CategoryController(service);
+   const controller = new CategoryController(repository);
 
    router.get('/', controller.getAll);
    router.get('/:id', controller.getById);

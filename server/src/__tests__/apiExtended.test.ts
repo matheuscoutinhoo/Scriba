@@ -1,20 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import request from 'supertest';
-import initSqlJs, { type Database } from 'sql.js';
-import { initializeSchema, execute } from '../database/connection';
+import type { Database } from 'sql.js';
 import { createApp } from '../app';
-
-async function createTestDb(): Promise<Database> {
-   const SQL = await initSqlJs();
-   const db = new SQL.Database();
-   db.run('PRAGMA foreign_keys = ON');
-   initializeSchema(db);
-   execute(db,
-      `INSERT INTO users (id, username, email, password_hash, display_name) VALUES (?, ?, ?, ?, ?)`,
-      ['default-user', 'scriba', 'scriba@local', 'hash', 'Scriba User']
-   );
-   return db;
-}
+import { createTestDb } from './helpers';
 
 describe('Notes API - Search', () => {
    let db: Database;
