@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
-import { PanelLeft } from 'lucide-react';
+import { PanelLeft, Sun, Moon } from 'lucide-react';
+import { useTheme } from '@/hooks/useTheme';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { NoteEditor } from '@/components/editor/NoteEditor';
@@ -24,6 +25,7 @@ function ScribaApp() {
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
   const [categoryDialogParent, setCategoryDialogParent] = useState<{ id: string; name: string } | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const { theme, toggleTheme } = useTheme();
 
   const { data: notes = [] } = useNotes();
   const { data: searchResults = [] } = useSearchNotes(searchQuery);
@@ -90,13 +92,20 @@ function ScribaApp() {
         style={{ width: sidebarCollapsed ? '40px' : '320px' }}
       >
         {sidebarCollapsed ? (
-          <div className="h-full flex flex-col items-center py-3 px-1 animate-[fadeIn_200ms_ease-out]">
+          <div className="h-full flex flex-col items-center py-3 px-1 gap-1 animate-[fadeIn_200ms_ease-out]">
             <button
               onClick={() => setSidebarCollapsed(false)}
               className="p-1.5 rounded-md hover:bg-[var(--color-bg-hover)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
               title="Show sidebar"
             >
               <PanelLeft className="h-4 w-4" />
+            </button>
+            <button
+              onClick={toggleTheme}
+              className="p-1.5 rounded-md hover:bg-[var(--color-bg-hover)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
+              title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+            >
+              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
           </div>
         ) : (
@@ -124,6 +133,8 @@ function ScribaApp() {
               onToggleArchive={handleToggleArchive}
               onDeleteNote={handleDeleteNote}
               onCollapse={() => setSidebarCollapsed(true)}
+              theme={theme}
+              onToggleTheme={toggleTheme}
             />
           </div>
         )}

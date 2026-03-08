@@ -316,16 +316,30 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
                               const newContent = e.target.value;
                               setContent(newContent);
                               scheduleAutoSave(title, newContent, tags);
+                              setSelectAll(false);
+                              setEditingLineIndex(null);
                            }}
-                           onBlur={() => setSelectAll(false)}
+                           onMouseUp={() => {
+                              const ta = selectAllRef.current;
+                              if (ta && ta.selectionStart === ta.selectionEnd) {
+                                 const pos = ta.selectionStart;
+                                 const before = content.substring(0, pos);
+                                 const lineIndex = before.split('\n').length - 1;
+                                 const lineStart = before.lastIndexOf('\n') + 1;
+                                 pendingCursorRef.current = pos - lineStart;
+                                 setSelectAll(false);
+                                 setEditingLineIndex(lineIndex);
+                              }
+                           }}
                            onKeyDown={(e) => {
                               if (e.key === 'Escape') {
                                  e.preventDefault();
                                  setSelectAll(false);
+                                 setEditingLineIndex(null);
                               }
                            }}
-                           className="w-full h-full bg-transparent border-none outline-none font-[family-name:var(--font-mono)] text-[var(--color-text-primary)] leading-relaxed resize-none"
-                           style={{ fontSize: '1.006rem' }}
+                           className="w-full bg-transparent border-none outline-none text-[var(--color-text-primary)] leading-relaxed resize-none"
+                           style={{ fontFamily: 'var(--font-sans)', fontSize: '1.006rem', minHeight: `${lines.length * 1.925}em` }}
                            spellCheck={false}
                            autoComplete="off"
                         />
@@ -359,8 +373,8 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
                                        setContextMenu({ x: e.clientX, y: e.clientY, lineIndex: index });
                                     }
                                  }}
-                                 className="w-full bg-transparent border-none outline-none font-[family-name:var(--font-mono)] text-[var(--color-text-primary)] py-0.5 block"
-                                 style={{ fontSize: '1.006rem', lineHeight: '1.925' }}
+                                 className="w-full bg-transparent border-none outline-none text-[var(--color-text-primary)] py-0.5 block"
+                                 style={{ fontFamily: 'var(--font-sans)', fontSize: '1.006rem', lineHeight: '1.925' }}
                                  spellCheck={false}
                                  autoComplete="off"
                               />

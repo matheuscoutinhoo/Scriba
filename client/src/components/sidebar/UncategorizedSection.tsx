@@ -97,7 +97,7 @@ export function UncategorizedSection({ selectedNoteId, onSelectNote, onTogglePin
                            className={cn(
                               'w-full text-left py-1.5 transition-colors cursor-pointer',
                               selectedNoteId === note.id
-                                 ? 'border-l-2 border-l-[var(--color-accent)] text-white'
+                                 ? 'border-l-2 border-l-[var(--color-accent)] text-[var(--color-text-primary)]'
                                  : 'text-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-secondary)]'
                            )}
                            style={{ paddingLeft: '28px', paddingRight: '8px', ...(selectedNoteId === note.id ? { background: 'linear-gradient(to right, var(--color-accent-soft) 0%, transparent 30%)' } : {}) }}

@@ -46,12 +46,16 @@ describe('Sidebar', () => {
       onSearch: vi.fn(),
       onNewNote: vi.fn(),
       onNewCategory: vi.fn(),
+      onCreateSubcategory: vi.fn(),
       onSelectNote: vi.fn(),
       onMoveNoteToCategory: vi.fn(),
+      onDropCategory: vi.fn(),
       onTogglePin: vi.fn(),
       onToggleArchive: vi.fn(),
       onDeleteNote: vi.fn(),
       onCollapse: vi.fn(),
+      theme: 'dark' as const,
+      onToggleTheme: vi.fn(),
    };
 
    it('renders logo and tagline', () => {

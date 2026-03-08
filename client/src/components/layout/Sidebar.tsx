@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Search, Plus, FolderPlus, Pin, PinOff, Archive, Trash2, Clock, FolderOpen, FileText, PanelLeftClose, Tag, X } from 'lucide-react';
+import { Search, Plus, FolderPlus, Pin, PinOff, Archive, Trash2, Clock, FolderOpen, FileText, PanelLeftClose, Tag, X, Sun, Moon } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -26,6 +26,8 @@ interface SidebarProps {
    onToggleArchive: (note: Note) => void;
    onDeleteNote: (id: string) => void;
    onCollapse: () => void;
+   theme: 'dark' | 'light';
+   onToggleTheme: () => void;
 }
 
 export function Sidebar({
@@ -45,6 +47,8 @@ export function Sidebar({
    onToggleArchive,
    onDeleteNote,
    onCollapse,
+   theme,
+   onToggleTheme,
 }: SidebarProps) {
    const [activeTab, setActiveTab] = useState<SidebarTab>('categories');
    const [tabAnimKey, setTabAnimKey] = useState(0);
@@ -89,13 +93,22 @@ export function Sidebar({
                </h1>
                <p className="text-xs text-[var(--color-text-muted)] mt-0.5">Smart Notes</p>
             </div>
-            <button
-               onClick={onCollapse}
-               className="p-1.5 rounded-md hover:bg-[var(--color-bg-hover)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
-               title="Hide sidebar"
-            >
-               <PanelLeftClose className="h-4 w-4" />
-            </button>
+            <div className="flex items-center gap-1">
+               <button
+                  onClick={onToggleTheme}
+                  className="p-1.5 rounded-md hover:bg-[var(--color-bg-hover)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
+                  title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+               >
+                  {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+               </button>
+               <button
+                  onClick={onCollapse}
+                  className="p-1.5 rounded-md hover:bg-[var(--color-bg-hover)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
+                  title="Hide sidebar"
+               >
+                  <PanelLeftClose className="h-4 w-4" />
+               </button>
+            </div>
          </div>
 
          {/* Search */}
@@ -135,7 +148,7 @@ export function Sidebar({
                className={cn(
                   'flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium transition-colors cursor-pointer',
                   activeTab === 'categories'
-                     ? 'text-white border-b-2 border-white'
+                     ? 'text-[var(--color-text-primary)] border-b-2 border-[var(--color-text-primary)]'
                      : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'
                )}
             >
@@ -147,7 +160,7 @@ export function Sidebar({
                className={cn(
                   'flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium transition-colors cursor-pointer',
                   activeTab === 'notes'
-                     ? 'text-white border-b-2 border-white'
+                     ? 'text-[var(--color-text-primary)] border-b-2 border-[var(--color-text-primary)]'
                      : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'
                )}
             >

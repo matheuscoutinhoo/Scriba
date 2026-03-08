@@ -611,7 +611,7 @@ describe('NoteEditor', () => {
       expect(screen.getByDisplayValue('## Section')).toBeInTheDocument();
    });
 
-   it('exits selectAll mode on textarea blur', () => {
+   it('exits selectAll mode on content change', () => {
       render(<NoteEditor note={makeNote({ content: 'line1' })} onSave={onSave} onDelete={onDelete} />);
 
       // Enter editing then ctrl+a
@@ -622,8 +622,8 @@ describe('NoteEditor', () => {
       const textarea = document.querySelector('textarea')!;
       expect(textarea).toBeInTheDocument();
 
-      // Blur the textarea
-      fireEvent.blur(textarea);
+      // Type to replace selected content
+      fireEvent.change(textarea, { target: { value: 'replaced' } });
 
       // Should exit selectAll mode
       expect(document.querySelector('textarea')).not.toBeInTheDocument();
