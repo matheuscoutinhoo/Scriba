@@ -70,7 +70,7 @@ function ScribaApp() {
     setShowCategoryDialog(true);
   }, []);
 
-  const handleDropCategory = useCallback((categoryId: string, newParentId: string) => {
+  const handleDropCategory = useCallback((categoryId: string, newParentId: string | null) => {
     updateCategory.mutate({ id: categoryId, parent_id: newParentId });
   }, [updateCategory]);
 

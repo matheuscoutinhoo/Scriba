@@ -21,7 +21,7 @@ interface SidebarProps {
    onCreateSubcategory: (parentId: string, parentName: string) => void;
    onSelectNote: (id: string) => void;
    onMoveNoteToCategory: (noteId: string, categoryId: string | null) => void;
-   onDropCategory: (categoryId: string, newParentId: string) => void;
+   onDropCategory: (categoryId: string, newParentId: string | null) => void;
    onTogglePin: (note: Note) => void;
    onToggleArchive: (note: Note) => void;
    onDeleteNote: (id: string) => void;

@@ -13,7 +13,7 @@ export interface CategoryNodeProps {
    selectedId: string | null;
    onSelect: (id: string) => void;
    onDropNote: (noteId: string, categoryId: string) => void;
-   onDropCategory?: (categoryId: string, newParentId: string) => void;
+   onDropCategory?: (categoryId: string, newParentId: string | null) => void;
    onCreateSubcategory?: (parentId: string, parentName: string) => void;
    selectedNoteId?: string | null;
    onSelectNote?: (id: string) => void;
@@ -107,6 +107,7 @@ export function CategoryNode({ category, selectedId, onSelect, onDropNote, onDro
             onDragStart={(e) => {
                e.dataTransfer.setData('text/x-category-id', category.id);
                e.dataTransfer.effectAllowed = 'move';
+               if (category.parent_id) onDragCategorizedNote?.();
             }}
             onDragOver={(e) => {
                e.preventDefault();
@@ -127,7 +128,7 @@ export function CategoryNode({ category, selectedId, onSelect, onDropNote, onDro
                'w-full text-left py-1.5 text-sm flex items-center gap-1.5 transition-colors cursor-pointer',
                isDragOver && 'ring-2 ring-[var(--color-accent)] ring-inset bg-[var(--color-accent-soft)]',
                isSelected
-                  ? 'bg-[var(--color-accent-soft)] text-[var(--color-accent)]'
+                  ? 'bg-[var(--color-accent-soft)] text-[var(--color-text-primary)]'
                   : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)]'
             )}
             style={{ paddingLeft: `${12 + depth * 16}px` }}

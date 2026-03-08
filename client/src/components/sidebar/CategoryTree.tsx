@@ -9,7 +9,7 @@ interface CategoryTreeProps {
    selectedId: string | null;
    onSelect: (id: string | null) => void;
    onDropNote: (noteId: string, categoryId: string | null) => void;
-   onDropCategory?: (categoryId: string, newParentId: string) => void;
+   onDropCategory?: (categoryId: string, newParentId: string | null) => void;
    onCreateSubcategory?: (parentId: string, parentName: string) => void;
    selectedNoteId?: string | null;
    onSelectNote?: (id: string) => void;
@@ -21,10 +21,11 @@ interface CategoryTreeProps {
 export function CategoryTree({ selectedId, onSelect, onDropNote, onDropCategory, onCreateSubcategory, selectedNoteId, onSelectNote, onTogglePin, onToggleArchive, onDeleteNote }: CategoryTreeProps) {
    const { data: categories, isLoading } = useCategories();
    const [isDraggingCategorized, setIsDraggingCategorized] = useState(false);
+   const [isDraggingSubcategory, setIsDraggingSubcategory] = useState(false);
    const [isDropHover, setIsDropHover] = useState(false);
 
    useEffect(() => {
-      const onDragEnd = () => { setIsDraggingCategorized(false); setIsDropHover(false); };
+      const onDragEnd = () => { setIsDraggingCategorized(false); setIsDraggingSubcategory(false); setIsDropHover(false); };
       window.addEventListener('dragend', onDragEnd);
       return () => window.removeEventListener('dragend', onDragEnd);
    }, []);
@@ -97,6 +98,8 @@ export function CategoryTree({ selectedId, onSelect, onDropNote, onDropCategory,
                   setIsDraggingCategorized(false);
                   const noteId = e.dataTransfer.getData('text/x-note-id');
                   if (noteId) onDropNote(noteId, null);
+                  const catId = e.dataTransfer.getData('text/x-category-id');
+                  if (catId) onDropCategory?.(catId, null);
                }}
             >
                Drop here to remove from category
