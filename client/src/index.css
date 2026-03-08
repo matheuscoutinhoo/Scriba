@@ -136,7 +136,7 @@
 /* Line-by-line live preview (Obsidian-like) */
 .markdown-line {
   font-size: 0.875rem;
-  line-height: 1.75;
+  line-height: 1.925;
   color: var(--color-text-primary);
 }
 
@@ -154,6 +154,7 @@
   font-weight: 700;
   margin: 0;
   padding: 0;
+  padding-bottom: 0.35em;
   line-height: 1.4;
   color: var(--color-text-primary);
 }

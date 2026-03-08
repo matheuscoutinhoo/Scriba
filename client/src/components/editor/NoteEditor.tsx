@@ -22,7 +22,7 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
    const [editingLineIndex, setEditingLineIndex] = useState<number | null>(null);
    const [selectAll, setSelectAll] = useState(false);
    const [isDirty, setIsDirty] = useState(false);
-   const [fontScale, setFontScale] = useState(100);
+   const [fontScale, setFontScale] = useState(120);
    const lineInputRef = useRef<HTMLInputElement>(null);
    const selectAllRef = useRef<HTMLTextAreaElement>(null);
    const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -300,7 +300,6 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
             {/* Content - Line-by-line live preview editor */}
             <div
                className="flex-1 overflow-y-auto px-8 py-4"
-               style={{ zoom: fontScale / 100 }}
                onMouseDown={(e) => {
                   if (e.target === e.currentTarget) {
                      e.preventDefault();
@@ -313,7 +312,7 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
                   }
                }}
             >
-               <div className="max-w-3xl mx-auto w-full">
+               <div className="max-w-3xl mx-auto w-full" style={{ zoom: fontScale / 100 }}>
                   {selectAll ? (
                      <textarea
                         ref={selectAllRef}
@@ -356,7 +355,8 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
                               onKeyDown={(e) => handleLineKeyDown(e, index)}
                               onPaste={(e) => handleLinePaste(e, index)}
                               onBlur={() => setEditingLineIndex(null)}
-                              className="w-full bg-transparent border-none outline-none text-sm font-[family-name:var(--font-mono)] text-[var(--color-text-primary)] leading-relaxed py-0.5 block"
+                              className="w-full bg-transparent border-none outline-none text-sm font-[family-name:var(--font-mono)] text-[var(--color-text-primary)] py-0.5 block"
+                              style={{ lineHeight: '1.925' }}
                               spellCheck={false}
                               autoComplete="off"
                            />
