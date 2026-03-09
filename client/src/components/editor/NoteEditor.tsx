@@ -434,8 +434,8 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
 
                {/* Table of Contents */}
                {headings.length > 0 && (
-                  <div className="absolute right-0 top-10 bottom-0 w-64 overflow-y-auto py-4 pr-3 pl-2 opacity-0 group-hover/editor:opacity-100 transition-opacity duration-300 pointer-events-none group-hover/editor:pointer-events-auto">
-                     <span className="text-[12px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] block mb-2">
+                  <div className="absolute right-0 top-10 bottom-0 w-64 overflow-y-auto py-4 pr-3 opacity-0 group-hover/editor:opacity-100 transition-opacity duration-300 pointer-events-none group-hover/editor:pointer-events-auto">
+                     <span className="text-[12px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] block mb-2 px-0">
                         On this page
                      </span>
                      <nav className="flex flex-col gap-0.5">
@@ -443,8 +443,8 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
                            <button
                               key={`${h.lineIndex}-${i}`}
                               onClick={() => scrollToHeading(h.lineIndex)}
-                              className="text-left text-[13px] py-0.5 text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors truncate cursor-pointer"
-                              style={{ paddingLeft: `${(h.level - 1) * 12}px` }}
+                              className="text-left text-[13px] px-0 py-0.5 text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors truncate cursor-pointer"
+
                               title={h.text}
                            >
                               {h.text}
