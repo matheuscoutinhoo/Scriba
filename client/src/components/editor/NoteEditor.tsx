@@ -38,6 +38,7 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
    const lineInputRef = useRef<HTMLInputElement>(null);
    const selectAllRef = useRef<HTMLTextAreaElement>(null);
    const pendingCursorRef = useRef<number | null>(null);
+   const pendingSelectionRef = useRef<{ start: number; end: number; direction: 'forward' | 'backward' } | null>(null);
 
    const { isDirty, save, scheduleAutoSave, resetDirty } = useAutoSave(note.id, onSave);
    const lines = useMemo(() => content.split('\n'), [content]);
@@ -45,7 +46,13 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
    useEffect(() => {
       if (selectAll && selectAllRef.current) {
          selectAllRef.current.focus();
-         selectAllRef.current.select();
+         if (pendingSelectionRef.current) {
+            const { start, end, direction } = pendingSelectionRef.current;
+            selectAllRef.current.setSelectionRange(start, end, direction);
+            pendingSelectionRef.current = null;
+         } else {
+            selectAllRef.current.select();
+         }
       }
    }, [selectAll]);
 
@@ -245,6 +252,36 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
       setEditingLineIndex(lineIndex);
    };
 
+   const findLineAtY = useCallback((clientY: number): number | null => {
+      for (const [idx, el] of lineRefs.current.entries()) {
+         const rect = el.getBoundingClientRect();
+         if (clientY >= rect.top && clientY <= rect.bottom) return idx;
+      }
+      let closest: { index: number; distance: number } | null = null;
+      for (const [idx, el] of lineRefs.current.entries()) {
+         const rect = el.getBoundingClientRect();
+         const d = clientY < rect.top ? rect.top - clientY : clientY - rect.bottom;
+         if (!closest || d < closest.distance) closest = { index: idx, distance: d };
+      }
+      return closest?.index ?? null;
+   }, []);
+
+   const switchToTextareaWithSelection = useCallback((fromLine: number, toLine: number) => {
+      const minLine = Math.min(fromLine, toLine);
+      const maxLine = Math.max(fromLine, toLine);
+      let startOffset = 0;
+      for (let i = 0; i < minLine; i++) startOffset += lines[i].length + 1;
+      let endOffset = startOffset;
+      for (let i = minLine; i <= maxLine; i++) endOffset += lines[i].length + (i < maxLine ? 1 : 0);
+      pendingSelectionRef.current = {
+         start: startOffset,
+         end: endOffset,
+         direction: fromLine <= toLine ? 'forward' : 'backward',
+      };
+      setEditingLineIndex(null);
+      setSelectAll(true);
+   }, [lines]);
+
    return (
       <>
          <div className="group/editor flex flex-col h-full" onKeyDown={(e) => {
@@ -398,6 +435,28 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
                                  onMouseDown={(e) => {
                                     e.preventDefault();
                                     setEditingLineIndex(index);
+
+                                    const startLine = index;
+                                    const startRect = e.currentTarget.getBoundingClientRect();
+
+                                    const handleMouseMove = (moveEvent: MouseEvent) => {
+                                       if (moveEvent.clientY < startRect.top || moveEvent.clientY > startRect.bottom) {
+                                          const targetLine = findLineAtY(moveEvent.clientY);
+                                          if (targetLine !== null && targetLine !== startLine) {
+                                             window.removeEventListener('mousemove', handleMouseMove);
+                                             window.removeEventListener('mouseup', handleMouseUp);
+                                             switchToTextareaWithSelection(startLine, targetLine);
+                                          }
+                                       }
+                                    };
+
+                                    const handleMouseUp = () => {
+                                       window.removeEventListener('mousemove', handleMouseMove);
+                                       window.removeEventListener('mouseup', handleMouseUp);
+                                    };
+
+                                    window.addEventListener('mousemove', handleMouseMove);
+                                    window.addEventListener('mouseup', handleMouseUp);
                                  }}
                                  className="min-h-[1.5em]"
                               >
