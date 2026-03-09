@@ -56,7 +56,7 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
       resetDirty();
       setEditingLineIndex(null);
       setSelectAll(false);
-   }, [note.id, note.title, note.content, note.tags, resetDirty]);
+   }, [note.id, resetDirty]);
 
    useEffect(() => {
       if (editingLineIndex !== null && lineInputRef.current) {
