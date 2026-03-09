@@ -1,7 +1,7 @@
 ﻿import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import rehypeSanitize from 'rehype-sanitize';
+import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import { Plus, Minus } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
@@ -10,6 +10,15 @@ import { EditorContextMenu } from './EditorContextMenu';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { EDITOR_FONT_SIZE, EDITOR_LINE_HEIGHT, ZOOM_MIN, ZOOM_MAX, ZOOM_STEP } from '@/lib/constants';
 import type { Note, UpdateNotePayload } from '@/lib/types';
+
+const sanitizeSchema = {
+   ...defaultSchema,
+   tagNames: [...(defaultSchema.tagNames ?? []), 'input'],
+   attributes: {
+      ...defaultSchema.attributes,
+      input: ['type', 'checked', 'disabled'],
+   },
+};
 
 interface NoteEditorProps {
    note: Note;
@@ -398,7 +407,7 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
                                     <div className="markdown-line">
                                        <ReactMarkdown
                                           remarkPlugins={[remarkGfm]}
-                                          rehypePlugins={[rehypeSanitize]}
+                                          rehypePlugins={[[rehypeSanitize, sanitizeSchema]]}
                                        >
                                           {line}
                                        </ReactMarkdown>

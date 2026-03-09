@@ -191,14 +191,25 @@
   font-size: 1.15rem;
 }
 
-.markdown-line ul,
+.markdown-line ul {
+  padding-left: 1.5em;
+  margin: 0;
+  list-style-type: disc;
+}
+
 .markdown-line ol {
   padding-left: 1.5em;
   margin: 0;
+  list-style-type: decimal;
 }
 
 .markdown-line li {
   margin: 0;
+  display: list-item;
+}
+
+.markdown-line .task-list-item {
+  list-style-type: none;
 }
 
 .markdown-line blockquote {

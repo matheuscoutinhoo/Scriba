@@ -9,7 +9,7 @@ vi.mock('react-markdown', () => ({
    default: ({ children }: { children: string }) => <div data-testid="markdown-preview">{children}</div>,
 }));
 vi.mock('remark-gfm', () => ({ default: () => { } }));
-vi.mock('rehype-sanitize', () => ({ default: () => { } }));
+vi.mock('rehype-sanitize', () => ({ default: () => { }, defaultSchema: { tagNames: [], attributes: {} } }));
 
 function makeNote(overrides: Partial<Note> = {}): Note {
    return {
