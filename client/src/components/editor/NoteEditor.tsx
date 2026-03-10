@@ -39,6 +39,9 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
    const selectAllRef = useRef<HTMLTextAreaElement>(null);
    const pendingCursorRef = useRef<number | null>(null);
    const pendingSelectionRef = useRef<{ start: number; end: number; direction: 'forward' | 'backward' } | null>(null);
+   const dragStartRef = useRef<number | null>(null);
+   const dragSelectionRef = useRef<{ from: number; to: number } | null>(null);
+   const [dragSelection, setDragSelection] = useState<{ from: number; to: number } | null>(null);
 
    const { isDirty, save, scheduleAutoSave, resetDirty } = useAutoSave(note.id, onSave);
    const lines = useMemo(() => content.split('\n'), [content]);
@@ -413,6 +416,26 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
                                  onKeyDown={(e) => handleLineKeyDown(e, index)}
                                  onPaste={(e) => handleLinePaste(e, index)}
                                  onBlur={() => setEditingLineIndex(null)}
+                                 onMouseDown={(e) => {
+                                    const startRect = e.currentTarget.getBoundingClientRect();
+                                    const editLine = index;
+                                    const handleMouseMove = (moveEvent: MouseEvent) => {
+                                       if (moveEvent.clientY < startRect.top || moveEvent.clientY > startRect.bottom) {
+                                          const targetLine = findLineAtY(moveEvent.clientY);
+                                          if (targetLine !== null && targetLine !== editLine) {
+                                             window.removeEventListener('mousemove', handleMouseMove);
+                                             window.removeEventListener('mouseup', handleMouseUp);
+                                             switchToTextareaWithSelection(editLine, targetLine);
+                                          }
+                                       }
+                                    };
+                                    const handleMouseUp = () => {
+                                       window.removeEventListener('mousemove', handleMouseMove);
+                                       window.removeEventListener('mouseup', handleMouseUp);
+                                    };
+                                    window.addEventListener('mousemove', handleMouseMove);
+                                    window.addEventListener('mouseup', handleMouseUp);
+                                 }}
                                  onContextMenu={(e) => {
                                     const input = e.currentTarget;
                                     if (input.selectionStart !== input.selectionEnd) {
@@ -434,31 +457,42 @@ export function NoteEditor({ note, onSave, onDelete }: NoteEditorProps) {
                                  }}
                                  onMouseDown={(e) => {
                                     e.preventDefault();
-                                    setEditingLineIndex(index);
-
-                                    const startLine = index;
-                                    const startRect = e.currentTarget.getBoundingClientRect();
+                                    dragStartRef.current = index;
+                                    dragSelectionRef.current = null;
+                                    setDragSelection(null);
 
                                     const handleMouseMove = (moveEvent: MouseEvent) => {
-                                       if (moveEvent.clientY < startRect.top || moveEvent.clientY > startRect.bottom) {
-                                          const targetLine = findLineAtY(moveEvent.clientY);
-                                          if (targetLine !== null && targetLine !== startLine) {
-                                             window.removeEventListener('mousemove', handleMouseMove);
-                                             window.removeEventListener('mouseup', handleMouseUp);
-                                             switchToTextareaWithSelection(startLine, targetLine);
-                                          }
+                                       if (dragStartRef.current === null) return;
+                                       const targetLine = findLineAtY(moveEvent.clientY);
+                                       if (targetLine !== null && targetLine !== dragStartRef.current) {
+                                          const sel = { from: dragStartRef.current, to: targetLine };
+                                          dragSelectionRef.current = sel;
+                                          setDragSelection(sel);
+                                       } else {
+                                          dragSelectionRef.current = null;
+                                          setDragSelection(null);
                                        }
                                     };
 
                                     const handleMouseUp = () => {
                                        window.removeEventListener('mousemove', handleMouseMove);
                                        window.removeEventListener('mouseup', handleMouseUp);
+                                       const sel = dragSelectionRef.current;
+                                       if (sel) {
+                                          switchToTextareaWithSelection(sel.from, sel.to);
+                                       } else if (dragStartRef.current !== null) {
+                                          setEditingLineIndex(dragStartRef.current);
+                                       }
+                                       dragStartRef.current = null;
+                                       dragSelectionRef.current = null;
+                                       setDragSelection(null);
                                     };
 
                                     window.addEventListener('mousemove', handleMouseMove);
                                     window.addEventListener('mouseup', handleMouseUp);
                                  }}
                                  className="min-h-[1.5em]"
+                                 style={dragSelection && index >= Math.min(dragSelection.from, dragSelection.to) && index <= Math.max(dragSelection.from, dragSelection.to) ? { backgroundColor: 'color-mix(in srgb, var(--color-accent) 20%, transparent)' } : undefined}
                               >
                                  {line.trim() === '' ? (
                                     <div className="h-[1.5em]" />

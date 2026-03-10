@@ -152,6 +152,7 @@ describe('NoteEditor', () => {
 
       // Click on the line to activate editing (uses mouseDown)
       fireEvent.mouseDown(renderedLine);
+      fireEvent.mouseUp(window);
 
       // Now an input should be visible with the raw markdown
       const lineInput = screen.getByDisplayValue('# Hello World');
@@ -170,6 +171,7 @@ describe('NoteEditor', () => {
 
       // Click line to start editing
       fireEvent.mouseDown(screen.getByText('# Hello World'));
+      fireEvent.mouseUp(window);
 
       // Change the line content
       const lineInput = screen.getByDisplayValue('# Hello World');
@@ -192,6 +194,7 @@ describe('NoteEditor', () => {
 
       // Click to edit the line
       fireEvent.mouseDown(screen.getByText('first line'));
+      fireEvent.mouseUp(window);
       const lineInput = screen.getByDisplayValue('first line');
 
       // Simulate Enter key press (cursor at position 5)
@@ -238,6 +241,7 @@ describe('NoteEditor', () => {
 
       // Click the second line to edit it
       fireEvent.mouseDown(screen.getByText('line2'));
+      fireEvent.mouseUp(window);
       const lineInput = screen.getByDisplayValue('line2');
 
       // Set cursor at beginning of line
@@ -259,6 +263,7 @@ describe('NoteEditor', () => {
 
       // Click the second line
       fireEvent.mouseDown(screen.getByText('line2'));
+      fireEvent.mouseUp(window);
       const lineInput = screen.getByDisplayValue('line2');
 
       Object.defineProperty(lineInput, 'selectionStart', { value: 0, writable: true });
@@ -273,6 +278,7 @@ describe('NoteEditor', () => {
 
       // Click the first line
       fireEvent.mouseDown(screen.getByText('line1'));
+      fireEvent.mouseUp(window);
       const lineInput = screen.getByDisplayValue('line1');
 
       Object.defineProperty(lineInput, 'selectionStart', { value: 0, writable: true });
@@ -287,6 +293,7 @@ describe('NoteEditor', () => {
       render(<NoteEditor note={makeNote({ content: 'hello' })} onSave={onSave} onDelete={onDelete} />);
 
       fireEvent.mouseDown(screen.getByText('hello'));
+      fireEvent.mouseUp(window);
       const lineInput = screen.getByDisplayValue('hello');
 
       Object.defineProperty(lineInput, 'selectionStart', { value: 0, writable: true });
@@ -306,6 +313,7 @@ describe('NoteEditor', () => {
 
       // Click a line to edit
       fireEvent.mouseDown(screen.getByText('line1'));
+      fireEvent.mouseUp(window);
       const lineInput = screen.getByDisplayValue('line1');
 
       fireEvent.keyDown(lineInput, { key: 'a', ctrlKey: true });
@@ -402,6 +410,7 @@ describe('NoteEditor', () => {
 
       // Click line to edit
       fireEvent.mouseDown(screen.getByText('hello'));
+      fireEvent.mouseUp(window);
       const lineInput = screen.getByDisplayValue('hello');
 
       // Set selection start/end
@@ -424,6 +433,7 @@ describe('NoteEditor', () => {
    it('opens context menu on right-click with selection', () => {
       render(<NoteEditor note={makeNote({ content: 'some text here' })} onSave={onSave} onDelete={onDelete} />);
       fireEvent.mouseDown(screen.getByText('some text here'));
+      fireEvent.mouseUp(window);
       const lineInput = screen.getByDisplayValue('some text here');
 
       // Set selection to simulate text selection
@@ -440,6 +450,7 @@ describe('NoteEditor', () => {
    it('does not open context menu when no selection', () => {
       render(<NoteEditor note={makeNote({ content: 'some text' })} onSave={onSave} onDelete={onDelete} />);
       fireEvent.mouseDown(screen.getByText('some text'));
+      fireEvent.mouseUp(window);
       const lineInput = screen.getByDisplayValue('some text');
 
       // No selection (start === end)
@@ -455,6 +466,7 @@ describe('NoteEditor', () => {
       vi.useFakeTimers();
       render(<NoteEditor note={makeNote({ content: 'hello world' })} onSave={onSave} onDelete={onDelete} />);
       fireEvent.mouseDown(screen.getByText('hello world'));
+      fireEvent.mouseUp(window);
       const lineInput = screen.getByDisplayValue('hello world');
 
       Object.defineProperty(lineInput, 'selectionStart', { value: 0, writable: true });
@@ -476,6 +488,7 @@ describe('NoteEditor', () => {
       vi.useFakeTimers();
       render(<NoteEditor note={makeNote({ content: 'some text' })} onSave={onSave} onDelete={onDelete} />);
       fireEvent.mouseDown(screen.getByText('some text'));
+      fireEvent.mouseUp(window);
       const lineInput = screen.getByDisplayValue('some text');
 
       Object.defineProperty(lineInput, 'selectionStart', { value: 0, writable: true });
@@ -496,6 +509,7 @@ describe('NoteEditor', () => {
    it('closes context menu on window click', () => {
       render(<NoteEditor note={makeNote({ content: 'text' })} onSave={onSave} onDelete={onDelete} />);
       fireEvent.mouseDown(screen.getByText('text'));
+      fireEvent.mouseUp(window);
       const lineInput = screen.getByDisplayValue('text');
 
       Object.defineProperty(lineInput, 'selectionStart', { value: 0, writable: true });
@@ -546,6 +560,7 @@ describe('NoteEditor', () => {
 
       // Enter editing then ctrl+a
       fireEvent.mouseDown(screen.getByText('line1'));
+      fireEvent.mouseUp(window);
       const lineInput = screen.getByDisplayValue('line1');
       fireEvent.keyDown(lineInput, { key: 'a', ctrlKey: true });
 
@@ -566,6 +581,7 @@ describe('NoteEditor', () => {
 
       // Enter editing then ctrl+a
       fireEvent.mouseDown(screen.getByText('line1'));
+      fireEvent.mouseUp(window);
       const lineInput = screen.getByDisplayValue('line1');
       fireEvent.keyDown(lineInput, { key: 'a', ctrlKey: true });
 
@@ -586,6 +602,7 @@ describe('NoteEditor', () => {
 
       // Enter select-all mode
       fireEvent.mouseDown(screen.getByText('line1'));
+      fireEvent.mouseUp(window);
       const lineInput = screen.getByDisplayValue('line1');
       fireEvent.keyDown(lineInput, { key: 'a', ctrlKey: true });
 
@@ -616,6 +633,7 @@ describe('NoteEditor', () => {
 
       // Enter editing then ctrl+a
       fireEvent.mouseDown(screen.getByText('line1'));
+      fireEvent.mouseUp(window);
       const lineInput = screen.getByDisplayValue('line1');
       fireEvent.keyDown(lineInput, { key: 'a', ctrlKey: true });
 
